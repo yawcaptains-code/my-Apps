@@ -1,0 +1,62 @@
+name: drink_provision_hub
+description: "Drink & Provision Hub – Online shop for drinks and everyday provisions in Ghana."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  provider: ^6.1.2
+
+  # Carousel/banner slider for promotional images
+  carousel_slider: ^5.0.0
+
+  # Cart badge counter on AppBar icon
+  badges: ^3.1.2
+
+  # Loading spinners
+  flutter_spinkit: ^5.2.1
+
+  # Nice smooth page indicator dots for onboarding
+  smooth_page_indicator: ^1.1.0
+
+  # Local persistence for cart + order history
+  shared_preferences: ^2.3.2
+
+  # Shimmer skeleton loading effect
+  shimmer: ^3.0.0
+
+  # WhatsApp / phone call deep-links
+  url_launcher: ^6.3.1
+
+  # Image picker for admin product uploads
+  image_picker: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  min_sdk_android: 21
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: false
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
