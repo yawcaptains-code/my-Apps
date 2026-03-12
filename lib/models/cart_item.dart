@@ -8,6 +8,7 @@ class CartItem {
   final String category; // 'drink' | 'provision'
   int quantity;
   final double price; // Price in Ghana Cedis (GH₵)
+  final String imageUrl; // base64 data URI or network URL or ''
 
   CartItem({
     required this.id,
@@ -15,6 +16,7 @@ class CartItem {
     required this.category,
     this.quantity = 1,
     required this.price,
+    this.imageUrl = '',
   });
 
   /// Returns a copy of this item with updated fields.
@@ -25,6 +27,7 @@ class CartItem {
       category: category,
       quantity: quantity ?? this.quantity,
       price: price,
+      imageUrl: imageUrl,
     );
   }
 

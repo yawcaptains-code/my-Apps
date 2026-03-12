@@ -38,6 +38,7 @@ class OrderModel {
                   'category': i.category,
                   'quantity': i.quantity,
                   'price': i.price,
+                  'imageUrl': i.imageUrl,
                 })
             .toList(),
         'total': total,
@@ -59,6 +60,7 @@ class OrderModel {
                   category: e['category'] as String,
                   quantity: e['quantity'] as int,
                   price: (e['price'] as num).toDouble(),
+                  imageUrl: (e['imageUrl'] as String?) ?? '',
                 ))
             .toList(),
         total: (json['total'] as num).toDouble(),

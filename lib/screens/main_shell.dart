@@ -50,7 +50,7 @@ class _MainShellState extends State<MainShell> {
       floatingActionButton: _currentIndex <= 2
           ? FloatingActionButton(
               heroTag: 'search_fab',
-              backgroundColor: const Color(0xFF0077B6),
+              backgroundColor: const Color(0xFFC62828),
               tooltip: 'Search products',
               onPressed: () => Navigator.pushNamed(context, '/search'),
               child: const Icon(Icons.search_rounded, color: Colors.white),
@@ -60,26 +60,25 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
-        backgroundColor: Colors.white,
         elevation: 8,
-        indicatorColor: const Color(0xFF0077B6).withOpacity(0.15),
+        indicatorColor: const Color(0xFFC62828).withValues(alpha: 0.15),
         destinations: [
           const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon:
-                Icon(Icons.home_rounded, color: Color(0xFF0077B6)),
+                Icon(Icons.home_rounded, color: Color(0xFFC62828)),
             label: 'Home',
           ),
           const NavigationDestination(
             icon: Icon(Icons.wine_bar_outlined),
             selectedIcon:
-                Icon(Icons.wine_bar_rounded, color: Color(0xFF0077B6)),
+                Icon(Icons.wine_bar_rounded, color: Color(0xFFC62828)),
             label: 'Drinks',
           ),
           const NavigationDestination(
             icon: Icon(Icons.shopping_basket_outlined),
             selectedIcon: Icon(Icons.shopping_basket_rounded,
-                color: Color(0xFF2D6A4F)),
+                color: Color(0xFFC62828)),
             label: 'Provisions',
           ),
           NavigationDestination(
@@ -102,14 +101,14 @@ class _MainShellState extends State<MainShell> {
                   badgeColor: Colors.redAccent,
                   padding: EdgeInsets.all(4)),
               child: const Icon(Icons.shopping_cart_rounded,
-                  color: Color(0xFF0077B6)),
+                  color: Color(0xFFC62828)),
             ),
             label: 'Cart',
           ),
           const NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
             selectedIcon:
-                Icon(Icons.person_rounded, color: Color(0xFF0077B6)),
+                Icon(Icons.person_rounded, color: Color(0xFFC62828)),
             label: 'Profile',
           ),
         ],

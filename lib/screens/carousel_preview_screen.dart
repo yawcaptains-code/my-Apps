@@ -44,7 +44,16 @@ class _CarouselPreviewScreenState extends State<CarouselPreviewScreen>
     return Scaffold(
       backgroundColor: const Color(0xFF0F1923),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF003557),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF2D0000), Color(0xFF990000), Color(0xFFC62828)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         foregroundColor: Colors.white,
         title: const Text('Carousel Preview',
             style: TextStyle(fontWeight: FontWeight.bold)),
@@ -75,8 +84,8 @@ class _CarouselPreviewScreenState extends State<CarouselPreviewScreen>
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white24),
               ),
-              child: Row(
-                children: const [
+              child: const Row(
+                children: [
                   Icon(Icons.info_outline_rounded,
                       color: Colors.amber, size: 20),
                   SizedBox(width: 10),
@@ -95,15 +104,15 @@ class _CarouselPreviewScreenState extends State<CarouselPreviewScreen>
             _CarouselSection(
               title: 'Drinks Shop Carousel',
               subtitle: 'Appears at the top of the Drink Shop screen',
-              accentColor: const Color(0xFF0096C7),
+              accentColor: const Color(0xFFEF5350),
               icon: Icons.local_bar_rounded,
               arrowBounce: _arrowBounce,
               banners: cp.drinkBanners,
               fallbackBanners: const [
-                _FallbackBanner('☀️  Summer Drinks', Color(0xFF0096C7)),
-                _FallbackBanner('🆕  New Arrivals', Color(0xFF023E8A)),
+                _FallbackBanner('☀️  Summer Drinks', Color(0xFFEF5350)),
+                _FallbackBanner('🆕  New Arrivals', Color(0xFF7F0000)),
                 _FallbackBanner('🍺  Beer Promos', Color(0xFFF4A261)),
-                _FallbackBanner('🥤  Soft Drinks Sale', Color(0xFF2EC4B6)),
+                _FallbackBanner('🥤  Soft Drinks Sale', Color(0xFFEF9A9A)),
                 _FallbackBanner('🍷  Wine Collection', Color(0xFF9D0208)),
               ],
             ),
@@ -114,15 +123,15 @@ class _CarouselPreviewScreenState extends State<CarouselPreviewScreen>
             _CarouselSection(
               title: 'Provisions Shop Carousel',
               subtitle: 'Appears at the top of the Provision Shop screen',
-              accentColor: const Color(0xFF52B788),
+              accentColor: const Color(0xFFEF5350),
               icon: Icons.shopping_basket_rounded,
               arrowBounce: _arrowBounce,
               banners: cp.provisionBanners,
               fallbackBanners: const [
-                _FallbackBanner('🍪  Bulk Biscuits Deal', Color(0xFF52B788)),
+                _FallbackBanner('🍪  Bulk Biscuits Deal', Color(0xFFEF5350)),
                 _FallbackBanner('🍳  Kitchen Essentials', Color(0xFFE76F51)),
-                _FallbackBanner('🧼  Soap & Detergents', Color(0xFF457B9D)),
-                _FallbackBanner('🛒  Weekly Grocery Pack', Color(0xFF2D6A4F)),
+                _FallbackBanner('🧼  Soap & Detergents', Color(0xFFE57373)),
+                _FallbackBanner('🛒  Weekly Grocery Pack', Color(0xFFC62828)),
                 _FallbackBanner('🏷️  Member-Only Prices', Color(0xFFD4A017)),
               ],
             ),
@@ -133,13 +142,13 @@ class _CarouselPreviewScreenState extends State<CarouselPreviewScreen>
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.12),
+                color: Colors.amber.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
               ),
-              child: Row(
+              child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Icon(Icons.lightbulb_outline_rounded,
                       color: Colors.amber, size: 20),
                   SizedBox(width: 10),
@@ -241,8 +250,8 @@ class _CarouselSection extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: hasAdmin
-                    ? Colors.green.withOpacity(0.2)
-                    : Colors.orange.withOpacity(0.2),
+                    ? Colors.green.withValues(alpha: 0.2)
+                    : Colors.orange.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: hasAdmin
@@ -289,10 +298,10 @@ class _CarouselSection extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF1C2B38),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: accentColor.withOpacity(0.5), width: 2),
+              border: Border.all(color: accentColor.withValues(alpha: 0.5), width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: accentColor.withOpacity(0.2),
+                  color: accentColor.withValues(alpha: 0.2),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -339,13 +348,13 @@ class _CarouselSection extends StatelessWidget {
                         offset: Offset(0, -arrowBounce.value * 0.5),
                         child: Column(
                           children: [
-                            Icon(Icons.arrow_drop_up_rounded,
+                            const Icon(Icons.arrow_drop_up_rounded,
                                 color: Colors.yellowAccent, size: 28),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: Colors.yellowAccent.withOpacity(0.2),
+                                color: Colors.yellowAccent.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
                                     color: Colors.yellowAccent, width: 1),

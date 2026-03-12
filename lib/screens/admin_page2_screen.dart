@@ -33,15 +33,30 @@ class _AdminPage2ScreenState extends State<AdminPage2Screen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
+      backgroundColor: const Color(0xFF990000),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF003557),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF2D0000), Color(0xFF990000), Color(0xFFC62828)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         foregroundColor: Colors.white,
         title: const Text('Admin Page 2 – Categories',
             style: TextStyle(fontWeight: FontWeight.bold)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushReplacementNamed(context, '/admin-dashboard');
+            }
+          },
         ),
         bottom: TabBar(
           controller: _tab,
@@ -74,7 +89,7 @@ class _CategoryManager extends StatelessWidget {
   const _CategoryManager({required this.type});
 
   Color get _accent =>
-      type == 'drink' ? const Color(0xFF0077B6) : const Color(0xFF2D6A4F);
+      type == 'drink' ? const Color(0xFFC62828) : const Color(0xFFC62828);
 
   String get _label => type == 'drink' ? 'Drink' : 'Provision';
 
@@ -90,9 +105,9 @@ class _CategoryManager extends StatelessWidget {
           margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: _accent.withOpacity(0.08),
+            color: _accent.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _accent.withOpacity(0.25)),
+            border: Border.all(color: _accent.withValues(alpha: 0.25)),
           ),
           child: Row(
             children: [
@@ -103,7 +118,7 @@ class _CategoryManager extends StatelessWidget {
                   'These categories appear in the $_label Shop. '
                   'Tap ✏️ to edit or 🗑 to delete.',
                   style: TextStyle(
-                      fontSize: 12, color: _accent.withOpacity(0.8)),
+                      fontSize: 12, color: _accent.withValues(alpha: 0.8)),
                 ),
               ),
             ],
@@ -148,10 +163,10 @@ class _CategoryManager extends StatelessWidget {
                 const SizedBox(height: 8),
                 TextButton.icon(
                   icon: Icon(Icons.restore_rounded,
-                      color: _accent.withOpacity(0.7), size: 16),
+                      color: _accent.withValues(alpha: 0.7), size: 16),
                   label: Text('Reset to defaults',
                       style: TextStyle(
-                          color: _accent.withOpacity(0.7), fontSize: 12)),
+                          color: _accent.withValues(alpha: 0.7), fontSize: 12)),
                   onPressed: () async {
                     final ok = await showDialog<bool>(
                       context: context,
@@ -216,9 +231,9 @@ class _CategoryTile extends StatelessWidget {
           width: 52,
           height: 52,
           decoration: BoxDecoration(
-            color: cat.color.withOpacity(0.15),
+            color: cat.color.withValues(alpha: 0.15),
             shape: BoxShape.circle,
-            border: Border.all(color: cat.color.withOpacity(0.4)),
+            border: Border.all(color: cat.color.withValues(alpha: 0.4)),
           ),
           child: cat.imageDataUri != null
               ? ClipOval(
@@ -314,7 +329,7 @@ void _showCategorySheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
         borderRadius:
             BorderRadius.vertical(top: Radius.circular(20))),
@@ -347,8 +362,8 @@ class _CategorySheetState extends State<_CategorySheet> {
   bool _saving = false;
 
   static const List<int> _colors = [
-    0xFF0077B6, 0xFF2EC4B6, 0xFFF4A261, 0xFF52B788,
-    0xFF2D6A4F, 0xFF457B9D, 0xFFE76F51, 0xFFE9C46A,
+    0xFFC62828, 0xFFEF9A9A, 0xFFF4A261, 0xFFEF5350,
+    0xFFC62828, 0xFFE57373, 0xFFE76F51, 0xFFE9C46A,
     0xFFB56576, 0xFF6366F1, 0xFF10B981, 0xFFEF4444,
   ];
 
@@ -376,7 +391,7 @@ class _CategorySheetState extends State<_CategorySheet> {
     _emoji = widget.existing?.emoji ??
         (widget.type == 'drink' ? '🍹' : '🛒');
     _colorValue = widget.existing?.colorValue ??
-        (widget.type == 'drink' ? 0xFF0077B6 : 0xFF2D6A4F);
+        (widget.type == 'drink' ? 0xFFC62828 : 0xFFC62828);
     // Pre-populate existing image
     if (widget.existing?.imageDataUri != null) {
       _imageDataUri = widget.existing!.imageDataUri;
@@ -470,7 +485,7 @@ class _CategorySheetState extends State<_CategorySheet> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: widget.accent.withOpacity(0.12),
+                    color: widget.accent.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -500,10 +515,10 @@ class _CategorySheetState extends State<_CategorySheet> {
               child: Container(
                 height: 120,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0F4F8),
+                  color: const Color(0xFF990000),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: widget.accent.withOpacity(0.4),
+                    color: widget.accent.withValues(alpha: 0.4),
                     width: 1.5,
                     style: BorderStyle.solid,
                   ),
@@ -524,7 +539,7 @@ class _CategorySheetState extends State<_CategorySheet> {
                               onTap: _removeImage,
                               child: Container(
                                 padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
+                                decoration: const BoxDecoration(
                                   color: Colors.black54,
                                   shape: BoxShape.circle,
                                 ),
@@ -556,12 +571,12 @@ class _CategorySheetState extends State<_CategorySheet> {
                         children: [
                           Icon(Icons.image_outlined,
                               size: 36,
-                              color: widget.accent.withOpacity(0.6)),
+                              color: widget.accent.withValues(alpha: 0.6)),
                           const SizedBox(height: 6),
                           Text('Tap to upload image',
                               style: TextStyle(
                                   color:
-                                      widget.accent.withOpacity(0.7),
+                                      widget.accent.withValues(alpha: 0.7),
                                   fontSize: 13)),
                           const SizedBox(height: 2),
                           Text('(shows instead of emoji in shop)',
@@ -584,7 +599,7 @@ class _CategorySheetState extends State<_CategorySheet> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Color(_colorValue).withOpacity(0.4),
+                      color: Color(_colorValue).withValues(alpha: 0.4),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -656,7 +671,7 @@ class _CategorySheetState extends State<_CategorySheet> {
                       height: 46,
                       decoration: BoxDecoration(
                         color: sel
-                            ? Color(_colorValue).withOpacity(0.2)
+                            ? Color(_colorValue).withValues(alpha: 0.2)
                             : Colors.white,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
@@ -705,7 +720,7 @@ class _CategorySheetState extends State<_CategorySheet> {
                       boxShadow: sel
                           ? [
                               BoxShadow(
-                                color: Color(c).withOpacity(0.5),
+                                color: Color(c).withValues(alpha: 0.5),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               )
@@ -777,7 +792,7 @@ class _EmptyState extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.category_outlined,
-              size: 64, color: accent.withOpacity(0.3)),
+              size: 64, color: accent.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
           Text('No $label categories yet.',
               style: const TextStyle(

@@ -35,35 +35,44 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     final input = _phoneEmailController.text.trim();
-    final password = _passwordController.text;
+    final enteredPassword = _passwordController.text;
+    final prefs = await SharedPreferences.getInstance();
 
-    // ── Admin credentials check (case-insensitive email) ──────────────────
+    // ── Admin credentials check ──────────────────────────────────────────────
     const adminEmail = 'Abmin@2026.com';
     const adminPassword = 'MKT@2026#heavenminded';
-
     if (input.toLowerCase() == adminEmail.toLowerCase() &&
-        password == adminPassword) {
-      final prefs = await SharedPreferences.getInstance();
+        enteredPassword == adminPassword) {
       await prefs.setBool('is_admin', true);
-      await prefs.setString('profile_email', adminEmail);
+      await prefs.setBool('is_logged_in', true);
       if (!mounted) return;
       setState(() => _isLoading = false);
       Navigator.pushNamedAndRemoveUntil(
           context, '/admin-dashboard', (route) => false);
       return;
     }
-    // ─────────────────────────────────────────────────────────────────────────
 
-    // ── Regular user login ────────────────────────────────────────────────
-    final prefs = await SharedPreferences.getInstance();
-    if (input.contains('@')) {
-      await prefs.setString('profile_email', input);
-    } else {
-      await prefs.setString('profile_phone', input);
+    // ── Regular user credentials check ──────────────────────────────────────
+    final savedPhone = prefs.getString('profile_phone') ?? '';
+    final savedEmail = prefs.getString('profile_email') ?? '';
+    final savedPassword = prefs.getString('profile_password') ?? '';
+
+    final phoneOrEmailMatch =
+        input == savedPhone || input.toLowerCase() == savedEmail.toLowerCase();
+
+    if (!phoneOrEmailMatch || enteredPassword != savedPassword) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Incorrect phone/email or password. Please try again.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
     }
-    if ((prefs.getString('profile_name') ?? '').isEmpty) {
-      await prefs.setString('profile_name', 'Customer');
-    }
+
     await prefs.setBool('is_logged_in', true);
     await prefs.setBool('is_admin', false);
 
@@ -73,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('✅  Logged in successfully! Welcome back.'),
-        backgroundColor: Color(0xFF0077B6),
+        backgroundColor: Color(0xFFC62828),
         behavior: SnackBarBehavior.floating,
         duration: Duration(seconds: 3),
       ),
@@ -85,11 +94,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F8FF),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ── Hero header ───────────────────────────────────────────────
+            // â”€â”€ Hero header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             _LoginHeader(),
 
             Padding(
@@ -99,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ── Phone / Email ────────────────────────────────────
+                    // â”€â”€ Phone / Email â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                     TextFormField(
                       controller: _phoneEmailController,
                       keyboardType: TextInputType.emailAddress,
@@ -117,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // ── Password ─────────────────────────────────────────
+                    // â”€â”€ Password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -142,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
 
-                    // ── Forgot password link ──────────────────────────────
+                    // â”€â”€ Forgot password link â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
@@ -158,14 +166,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: const Text(
                           'Forgot password?',
                           style: TextStyle(
-                              color: Color(0xFF0077B6), fontSize: 13),
+                              color: Color(0xFFC62828), fontSize: 13),
                         ),
                       ),
                     ),
 
                     const SizedBox(height: 8),
 
-                    // ── Sign in button ────────────────────────────────────
+                    // â”€â”€ Sign in button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                     ElevatedButton(
                       onPressed: _isLoading ? null : _submit,
                       style: ElevatedButton.styleFrom(
@@ -191,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 20),
 
-                    // ── Divider ───────────────────────────────────────────
+                    // â”€â”€ Divider â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                     Row(
                       children: [
                         const Expanded(child: Divider()),
@@ -209,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 20),
 
-                    // ── Register link ─────────────────────────────────────
+                    // â”€â”€ Register link â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                     OutlinedButton.icon(
                       icon: const Icon(Icons.person_add_alt_1_rounded),
                       label: const Text(
@@ -223,54 +231,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding:
                             const EdgeInsets.symmetric(vertical: 14),
                         side: const BorderSide(
-                            color: Color(0xFF0077B6), width: 1.5),
-                        foregroundColor: const Color(0xFF0077B6),
+                            color: Color(0xFFC62828), width: 1.5),
+                        foregroundColor: const Color(0xFFC62828),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 12),
 
-                    // ── Continue as guest ─────────────────────────────────
-                    Center(
-                      child: TextButton(
-                        onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                            context, '/home', (route) => false),
-                        child: const Text(
-                          'Continue as Guest',
-                          style: TextStyle(
-                              color: Colors.grey, fontSize: 13),
-                        ),
-                      ),
-                    ),
-
-                    const Divider(height: 32),
-
-                    // ── Admin Portal link ─────────────────────────────────
-                    Center(
-                      child: GestureDetector(
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/admin-login'),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.admin_panel_settings_outlined,
-                                size: 16,
-                                color: Colors.grey.shade500),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Admin Portal',
-                              style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 13,
-                                  decoration: TextDecoration.underline),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -283,7 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ── Hero header widget ────────────────────────────────────────────────────────
+// â”€â”€ Hero header widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _LoginHeader extends StatelessWidget {
   @override
@@ -294,7 +263,7 @@ class _LoginHeader extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(24, topPadding + 24, 24, 28),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF023E8A), Color(0xFF0096C7)],
+          colors: [Color(0xFF7F0000), Color(0xFFEF5350)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -308,7 +277,13 @@ class _LoginHeader extends StatelessWidget {
         children: [
           // Back button
           GestureDetector(
-            onTap: () => Navigator.maybePop(context),
+            onTap: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushReplacementNamed(context, '/home');
+              }
+            },
             child: const Icon(Icons.arrow_back_ios_new_rounded,
                 color: Colors.white70),
           ),
@@ -328,7 +303,7 @@ class _LoginHeader extends StatelessWidget {
           Text(
             'Welcome back to Drink & Provision Hub',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.80),
+              color: Colors.white.withValues(alpha: 0.80),
               fontSize: 14,
             ),
           ),

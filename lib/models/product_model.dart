@@ -7,6 +7,7 @@ class ProductModel {
   final double price;
   final String imageUrl; // network URL or empty string
   final String category; // 'drink' | 'provision'
+  final String drinkType; // 'alcoholic' | 'non-alcoholic' | '' (for provisions)
   final DateTime addedAt;
 
   ProductModel({
@@ -15,6 +16,7 @@ class ProductModel {
     required this.price,
     required this.imageUrl,
     required this.category,
+    this.drinkType = '',
     required this.addedAt,
   });
 
@@ -24,6 +26,7 @@ class ProductModel {
         'price': price,
         'imageUrl': imageUrl,
         'category': category,
+        'drinkType': drinkType,
         'addedAt': addedAt.toIso8601String(),
       };
 
@@ -33,6 +36,7 @@ class ProductModel {
         price: (json['price'] as num).toDouble(),
         imageUrl: json['imageUrl'] as String,
         category: json['category'] as String,
+        drinkType: (json['drinkType'] as String?) ?? '',
         addedAt: DateTime.parse(json['addedAt'] as String),
       );
 

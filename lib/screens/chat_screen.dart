@@ -48,20 +48,6 @@ class _ChatScreenState extends State<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final List<_ChatMessage> _messages = [];
-  bool _isSending = false;
-
-  // Auto-replies cycling through helpful responses.
-  static const List<String> _autoReplies = [
-    '👋  Hello! Thanks for reaching out. How can we help you today?',
-    '🛒  We got your message! Our team will attend to your order shortly.',
-    '✅  Your request has been noted. We aim to respond within 24 hours.',
-    '📦  Deliveries within Accra take 1–3 hours. For other regions allow 1–2 days.',
-    '💳  We accept MTN MoMo, Vodafone Cash, AirtelTigo, bank transfer, and cash on delivery.',
-    '📞  For urgent matters call +233 244 000 000 or WhatsApp us directly.',
-    '🙏  Thank you for shopping with Drink & Provision Hub. Is there anything else we can help with?',
-  ];
-
-  int _autoReplyIndex = 0;
 
   @override
   void initState() {
@@ -79,14 +65,6 @@ class _ChatScreenState extends State<ChatScreen> {
         _messages.addAll(
             list.map((e) => _ChatMessage.fromJson(e as Map<String, dynamic>)));
       });
-      _autoReplyIndex = _messages.where((m) => !m.isUser).length;
-    } else {
-      // Seed an initial admin greeting if no history exists.
-      _addMessage(
-        text: '👋  Hi there! Welcome to Drink & Provision Hub Support. '
-            'How can we assist you today?',
-        isUser: false,
-      );
     }
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
   }
@@ -111,22 +89,11 @@ class _ChatScreenState extends State<ChatScreen> {
         .addPostFrameCallback((_) => _scrollToBottom());
   }
 
-  Future<void> _send() async {
+  void _send() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-
     _controller.clear();
     _addMessage(text: text, isUser: true);
-
-    // Simulate admin typing delay then auto-reply.
-    setState(() => _isSending = true);
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (!mounted) return;
-    setState(() => _isSending = false);
-
-    final reply = _autoReplies[_autoReplyIndex % _autoReplies.length];
-    _autoReplyIndex++;
-    _addMessage(text: reply, isUser: false);
   }
 
   void _scrollToBottom() {
@@ -160,15 +127,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (confirm == true && mounted) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_prefsKey);
-      setState(() {
-        _messages.clear();
-        _autoReplyIndex = 0;
-      });
-      _addMessage(
-        text: '👋  Hi there! Welcome to Drink & Provision Hub Support. '
-            'How can we assist you today?',
-        isUser: false,
-      );
+      setState(() => _messages.clear());
     }
   }
 
@@ -182,13 +141,13 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F8FF),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Row(
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
               child: const Icon(Icons.support_agent_rounded,
                   color: Colors.white, size: 20),
             ),
@@ -206,7 +165,16 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF0077B6),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7F0000), Color(0xFFC62828), Color(0xFFEF5350)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined),
@@ -217,7 +185,7 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Column(
         children: [
-          // ── Message list ───────────────────────────────────────────────────
+          // â”€â”€ Message list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           Expanded(
             child: _messages.isEmpty
                 ? const Center(
@@ -233,46 +201,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
           ),
 
-          // ── Typing indicator ───────────────────────────────────────────────
-          if (_isSending)
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: const Color(0xFF0077B6).withOpacity(0.15),
-                    child: const Icon(Icons.support_agent_rounded,
-                        size: 16, color: Color(0xFF0077B6)),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.only(
-                        topRight: Radius.circular(18),
-                        bottomLeft: Radius.circular(18),
-                        bottomRight: Radius.circular(18),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2)),
-                      ],
-                    ),
-                    child: const _TypingDots(),
-                  ),
-                ],
-              ),
-            ),
-
           const Divider(height: 1),
 
-          // ── Input bar ──────────────────────────────────────────────────────
+          // â”€â”€ Input bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           SafeArea(
             top: false,
             child: Container(
@@ -286,7 +217,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       controller: _controller,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
-                        hintText: 'Type a message…',
+                        hintText: 'Type a messageâ€¦',
                         hintStyle:
                             const TextStyle(color: Colors.grey, fontSize: 14),
                         filled: true,
@@ -304,7 +235,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   const SizedBox(width: 8),
                   FloatingActionButton.small(
                     heroTag: 'chat_send_fab',
-                    backgroundColor: const Color(0xFF0077B6),
+                    backgroundColor: const Color(0xFFC62828),
                     onPressed: _send,
                     child: const Icon(Icons.send_rounded,
                         color: Colors.white, size: 20),
@@ -319,7 +250,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-// ── Message bubble ────────────────────────────────────────────────────────────
+// â”€â”€ Message bubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _MessageBubble extends StatelessWidget {
   final _ChatMessage message;
@@ -339,9 +270,9 @@ class _MessageBubble extends StatelessWidget {
           if (!isUser) ...[
             CircleAvatar(
               radius: 14,
-              backgroundColor: const Color(0xFF0077B6).withOpacity(0.15),
+              backgroundColor: const Color(0xFFC62828).withValues(alpha: 0.15),
               child: const Icon(Icons.support_agent_rounded,
-                  size: 16, color: Color(0xFF0077B6)),
+                  size: 16, color: Color(0xFFC62828)),
             ),
             const SizedBox(width: 8),
           ],
@@ -353,7 +284,7 @@ class _MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color:
-                    isUser ? const Color(0xFF0077B6) : Colors.white,
+                    isUser ? const Color(0xFFC62828) : Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -362,7 +293,7 @@ class _MessageBubble extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.07),
+                    color: Colors.black.withValues(alpha: 0.07),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -374,20 +305,33 @@ class _MessageBubble extends StatelessWidget {
                   Text(
                     message.text,
                     style: TextStyle(
-                      color: isUser ? Colors.white : Colors.black87,
+                      color: isUser ? Colors.white : Theme.of(context).colorScheme.onSurface,
                       fontSize: 14,
                       height: 1.45,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    _formatTime(message.timestamp),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isUser
-                          ? Colors.white60
-                          : Colors.grey.shade400,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatTime(message.timestamp),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isUser
+                              ? Colors.white60
+                              : Colors.grey.shade400,
+                        ),
+                      ),
+                      if (isUser) ...[
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.done_all_rounded,
+                          size: 13,
+                          color: Colors.white60,
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -397,9 +341,9 @@ class _MessageBubble extends StatelessWidget {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 14,
-              backgroundColor: const Color(0xFF0077B6).withOpacity(0.15),
+              backgroundColor: const Color(0xFFC62828).withValues(alpha: 0.15),
               child: const Icon(Icons.person_rounded,
-                  size: 16, color: Color(0xFF0077B6)),
+                  size: 16, color: Color(0xFFC62828)),
             ),
           ],
         ],
@@ -411,66 +355,5 @@ class _MessageBubble extends StatelessWidget {
     final h = dt.hour.toString().padLeft(2, '0');
     final m = dt.minute.toString().padLeft(2, '0');
     return '$h:$m';
-  }
-}
-
-// ── Typing dots animation ─────────────────────────────────────────────────────
-
-class _TypingDots extends StatefulWidget {
-  const _TypingDots();
-
-  @override
-  State<_TypingDots> createState() => _TypingDotsState();
-}
-
-class _TypingDotsState extends State<_TypingDots>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (_, __) {
-        final t = _ctrl.value;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(3, (i) {
-            final delay = i / 3;
-            final val =
-                ((t - delay).clamp(0.0, 1.0) * 2 * 3.14159).abs();
-            final scale = 0.6 + 0.4 * (1 - (val - 1.5).abs().clamp(0, 1));
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: Transform.scale(
-                scale: scale,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF0077B6),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            );
-          }),
-        );
-      },
-    );
   }
 }

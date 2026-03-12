@@ -27,6 +27,7 @@ class CartProvider extends ChangeNotifier {
           category: data['category'] as String,
           quantity: data['quantity'] as int,
           price: (data['price'] as num).toDouble(),
+          imageUrl: (data['imageUrl'] as String?) ?? '',
         );
       });
       notifyListeners();
@@ -41,6 +42,7 @@ class CartProvider extends ChangeNotifier {
           'category': v.category,
           'quantity': v.quantity,
           'price': v.price,
+          'imageUrl': v.imageUrl,
         })));
     await prefs.setString(_key, encoded);
   }
@@ -65,6 +67,7 @@ class CartProvider extends ChangeNotifier {
     required String name,
     required String category,
     required double price,
+    String imageUrl = '',
   }) {
     if (_items.containsKey(id)) {
       _items[id] = _items[id]!.copyWith(quantity: _items[id]!.quantity + 1);
@@ -74,6 +77,7 @@ class CartProvider extends ChangeNotifier {
         name: name,
         category: category,
         price: price,
+        imageUrl: imageUrl,
       );
     }
     notifyListeners();

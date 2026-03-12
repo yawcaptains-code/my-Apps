@@ -35,6 +35,7 @@ class ProductsProvider extends ChangeNotifier {
     required double price,
     required String imageUrl,
     required String category,
+    String drinkType = '',
   }) async {
     final product = ProductModel(
       id: 'PROD-${DateTime.now().millisecondsSinceEpoch}',
@@ -42,6 +43,7 @@ class ProductsProvider extends ChangeNotifier {
       price: price,
       imageUrl: imageUrl,
       category: category,
+      drinkType: drinkType,
       addedAt: DateTime.now(),
     );
     _products.insert(0, product);

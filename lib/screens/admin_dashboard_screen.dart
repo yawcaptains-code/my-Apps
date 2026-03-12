@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/orders_provider.dart';
 import '../providers/products_provider.dart';
 import '../providers/carousel_provider.dart';
+import '../providers/categories_provider.dart';
 import '../models/order.dart';
 import '../models/product_model.dart';
 
@@ -21,7 +22,29 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _selectedTab = 0; // 0=Overview, 1=Orders, 2=Customers, 3=Products
+  int _unreadMsgCount = 0;
 
+  @override
+  void initState(                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               ) {
+    super.initState();
+    _loadUnreadCount();
+  }
+
+  Future<void> _loadUnreadCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('chat_messages');
+    int total = 0;
+    if (raw != null) {
+      final list = jsonDecode(raw) as List<dynamic>;
+      total = list
+          .where((e) => (e as Map<String, dynamic>)['isUser'] == true)
+          .length;
+    }
+    final seen = prefs.getInt('admin_msgs_seen_count') ?? 0;
+    if (mounted) {
+      setState(() => _unreadMsgCount = (total - seen).clamp(0, 999));
+    }
+  }
   void _logout() {
     showDialog<void>(
       context: context,
@@ -66,14 +89,76 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         orders.where((o) => o.status == 'Delivered').length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
+      backgroundColor: const Color(0xFF990000),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF003557),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF2D0000), Color(0xFF990000), Color(0xFFC62828)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         foregroundColor: Colors.white,
+        centerTitle: false,
         title: const Text('Admin Dashboard',
             style: TextStyle(fontWeight: FontWeight.bold)),
         automaticallyImplyLeading: false,
         actions: [
+          // ── Messages badge button ──────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chat_rounded),
+                  tooltip: 'Customer Messages',
+                  onPressed: () async {
+                    await Navigator.pushNamed(context, '/admin-page3',
+                        arguments: 1);
+                    _loadUnreadCount();
+                  },
+                ),
+                if (_unreadMsgCount > 0)
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: IgnorePointer(
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        constraints: const BoxConstraints(
+                            minWidth: 18, minHeight: 18),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          _unreadMsgCount > 99
+                              ? '99+'
+                              : '$_unreadMsgCount',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.contact_phone_rounded),
+            tooltip: 'Admin Page 3 – Contact Settings',
+            onPressed: () async {
+              await Navigator.pushNamed(context, '/admin-page3');
+              _loadUnreadCount();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.arrow_forward_ios_rounded),
             tooltip: 'Admin Page 2',
@@ -92,7 +177,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         children: [
           // ── Tab Bar ───────────────────────────────────────────────────────
           Container(
-            color: const Color(0xFF003557),
+            color: const Color(0xFF990000),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -268,7 +353,7 @@ class _OverviewTab extends StatelessWidget {
                   label: 'Total Orders',
                   value: '$totalOrders',
                   icon: Icons.receipt_long_rounded,
-                  color: const Color(0xFF0077B6),
+                  color: const Color(0xFFC62828),
                 ),
               ),
               const SizedBox(width: 12),
@@ -301,7 +386,7 @@ class _OverviewTab extends StatelessWidget {
                   label: 'Confirmed',
                   value: '$confirmed',
                   icon: Icons.check_circle_outline_rounded,
-                  color: const Color(0xFF0077B6),
+                  color: const Color(0xFFC62828),
                 ),
               ),
               const SizedBox(width: 12),
@@ -386,12 +471,12 @@ class _OrdersTabState extends State<_OrdersTab> {
                     selected: isSelected,
                     onSelected: (_) => setState(() => _filter = f),
                     selectedColor:
-                        const Color(0xFF0077B6).withOpacity(0.2),
-                    checkmarkColor: const Color(0xFF0077B6),
+                        const Color(0xFFC62828).withValues(alpha: 0.2),
+                    checkmarkColor: const Color(0xFFC62828),
                     labelStyle: TextStyle(
                       color: isSelected
-                          ? const Color(0xFF0077B6)
-                          : Colors.black87,
+                          ? const Color(0xFFC62828)
+                          : Theme.of(context).colorScheme.onSurface,
                       fontWeight: isSelected
                           ? FontWeight.bold
                           : FontWeight.normal,
@@ -464,13 +549,13 @@ class _CustomersTab extends StatelessWidget {
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor:
-                        const Color(0xFF0077B6).withOpacity(0.15),
+                        const Color(0xFFC62828).withValues(alpha: 0.15),
                     child: Text(
                       (c['name'] as String)
                           .substring(0, 1)
                           .toUpperCase(),
                       style: const TextStyle(
-                          color: Color(0xFF0077B6),
+                          color: Color(0xFFC62828),
                           fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -534,7 +619,7 @@ class _StatCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 22),
@@ -566,7 +651,7 @@ class _OrderListTile extends StatelessWidget {
   Color _statusColor(String status) {
     switch (status) {
       case 'Confirmed':
-        return const Color(0xFF0077B6);
+        return const Color(0xFFC62828);
       case 'Delivered':
         return const Color(0xFF2ECC71);
       default:
@@ -593,7 +678,7 @@ class _OrderListTile extends StatelessWidget {
             ...statuses.map((s) {
               final isCurrent = s == order.status;
               final color = switch (s) {
-                'Confirmed' => const Color(0xFF0077B6),
+                'Confirmed' => const Color(0xFFC62828),
                 'Delivered' => const Color(0xFF2ECC71),
                 _ => Colors.orange,
               };
@@ -606,7 +691,7 @@ class _OrderListTile extends StatelessWidget {
                 ),
                 title: Text(s,
                     style: TextStyle(
-                        color: isCurrent ? color : Colors.black87,
+                        color: isCurrent ? color : Theme.of(context).colorScheme.onSurface,
                         fontWeight: isCurrent
                             ? FontWeight.bold
                             : FontWeight.normal)),
@@ -618,6 +703,7 @@ class _OrderListTile extends StatelessWidget {
       ),
     );
     if (chosen != null && chosen != order.status) {
+      if (!context.mounted) return;
       await context.read<OrdersProvider>().updateStatus(order.id, chosen);
     }
   }
@@ -645,7 +731,7 @@ class _OrderListTile extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -660,7 +746,7 @@ class _OrderListTile extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(order.recipientName,
-                style: const TextStyle(fontSize: 13, color: Colors.black87)),
+                style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface)),
             Text(order.phone,
                 style:
                     const TextStyle(fontSize: 12, color: Colors.grey)),
@@ -672,7 +758,7 @@ class _OrderListTile extends StatelessWidget {
                   'GH₵ ${order.total.toStringAsFixed(2)}',
                   style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF003557),
+                      color: Color(0xFF990000),
                       fontSize: 15),
                 ),
                 Text(
@@ -699,8 +785,8 @@ class _OrderListTile extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         padding:
                             const EdgeInsets.symmetric(vertical: 6),
-                        side: const BorderSide(color: Color(0xFF0077B6)),
-                        foregroundColor: const Color(0xFF0077B6),
+                        side: const BorderSide(color: Color(0xFFC62828)),
+                        foregroundColor: const Color(0xFFC62828),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8)),
                       ),
@@ -715,7 +801,7 @@ class _OrderListTile extends StatelessWidget {
                       label: const Text('Status',
                           style: TextStyle(fontSize: 12)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF003557),
+                        backgroundColor: const Color(0xFF990000),
                         padding:
                             const EdgeInsets.symmetric(vertical: 6),
                         shape: RoundedRectangleBorder(
@@ -770,7 +856,7 @@ class _OrderListTile extends StatelessWidget {
                   'GH₵ ${order.total.toStringAsFixed(2)}',
                   style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF003557),
+                      color: Color(0xFF990000),
                       fontSize: 15),
                 ),
               ],
@@ -819,9 +905,9 @@ class _ProductsTabState extends State<_ProductsTab>
           color: Colors.white,
           child: TabBar(
             controller: _tabCtrl,
-            labelColor: const Color(0xFF003557),
+            labelColor: const Color(0xFF990000),
             unselectedLabelColor: Colors.grey,
-            indicatorColor: const Color(0xFF003557),
+            indicatorColor: const Color(0xFF990000),
             tabs: const [
               Tab(icon: Icon(Icons.local_bar_outlined), text: 'Drinks'),
               Tab(
@@ -860,10 +946,12 @@ class _ProductUploadPanelState extends State<_ProductUploadPanel> {
   final _priceCtrl = TextEditingController();
   Uint8List? _pickedImageBytes;
   bool _isSaving = false;
+  String _drinkType = ''; // set to first category id on first build
+  String _provisionType = ''; // set to first category id on first build
 
   Color get _accent => widget.category == 'drink'
-      ? const Color(0xFF0077B6)
-      : const Color(0xFF2D6A4F);
+      ? const Color(0xFFC62828)
+      : const Color(0xFFC62828);
 
   IconData get _icon => widget.category == 'drink'
       ? Icons.local_bar_outlined
@@ -900,6 +988,9 @@ class _ProductUploadPanelState extends State<_ProductUploadPanel> {
           price: double.parse(_priceCtrl.text.trim()),
           imageUrl: imageUrl,
           category: widget.category,
+          drinkType: widget.category == 'drink'
+              ? _drinkType
+              : (widget.category == 'provision' ? _provisionType : ''),
         );
     _nameCtrl.clear();
     _priceCtrl.clear();
@@ -934,10 +1025,10 @@ class _ProductUploadPanelState extends State<_ProductUploadPanel> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _accent.withOpacity(0.3)),
+              border: Border.all(color: _accent.withValues(alpha: 0.3)),
               boxShadow: [
                 BoxShadow(
-                    color: _accent.withOpacity(0.06),
+                    color: _accent.withValues(alpha: 0.06),
                     blurRadius: 8,
                     offset: const Offset(0, 2)),
               ],
@@ -973,7 +1064,7 @@ class _ProductUploadPanelState extends State<_ProductUploadPanel> {
                         border: Border.all(
                             color: _accent, style: BorderStyle.solid),
                         borderRadius: BorderRadius.circular(10),
-                        color: _accent.withOpacity(0.05),
+                        color: _accent.withValues(alpha: 0.05),
                       ),
                       child: _pickedImageBytes != null
                           ? ClipRRect(
@@ -1002,7 +1093,7 @@ class _ProductUploadPanelState extends State<_ProductUploadPanel> {
                                 Text(
                                   'Choose from gallery',
                                   style: TextStyle(
-                                      color: _accent.withOpacity(0.6),
+                                      color: _accent.withValues(alpha: 0.6),
                                       fontSize: 12),
                                 ),
                               ],
@@ -1023,6 +1114,154 @@ class _ProductUploadPanelState extends State<_ProductUploadPanel> {
                       ),
                     ),
                   const SizedBox(height: 12),
+
+                  // ── Drink Category (dynamic from CategoriesProvider) ──
+                  if (widget.category == 'drink') ...[
+                    Row(
+                      children: [
+                        Icon(Icons.category_outlined,
+                            color: _accent, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Drink Category',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _accent,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Builder(
+                      builder: (ctx) {
+                        final cats = ctx
+                            .watch<CategoriesProvider>()
+                            .drinkCategories;
+                        if (_drinkType.isEmpty && cats.isNotEmpty) {
+                          _drinkType = cats.first.id;
+                        }
+                        return Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: _accent.withValues(alpha: 0.35)),
+                            borderRadius: BorderRadius.circular(10),
+                            color: _accent.withValues(alpha: 0.04),
+                          ),
+                          child: Column(
+                            children: [
+                              for (int i = 0; i < cats.length; i++) ...[
+                                if (i > 0)
+                                  Divider(
+                                      height: 1,
+                                      color:
+                                          _accent.withValues(alpha: 0.15)),
+                                RadioListTile<String>(
+                                  value: cats[i].id,
+                                  groupValue: _drinkType,
+                                  onChanged: (v) =>
+                                      setState(() => _drinkType = v!),
+                                  activeColor: _accent,
+                                  dense: true,
+                                  title: Row(
+                                    children: [
+                                      Text(cats[i].emoji,
+                                          style: const TextStyle(
+                                              fontSize: 18)),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          cats[i].name,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ── Provision Category ──────────────────────────────
+                  if (widget.category == 'provision') ...[
+                    Row(
+                      children: [
+                        Icon(Icons.category_outlined,
+                            color: _accent, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Provision Category',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _accent,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Builder(
+                      builder: (ctx) {
+                        final cats = ctx
+                            .watch<CategoriesProvider>()
+                            .provisionCategories;
+                        if (_provisionType.isEmpty && cats.isNotEmpty) {
+                          _provisionType = cats.first.id;
+                        }
+                        return Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: _accent.withValues(alpha: 0.35)),
+                            borderRadius: BorderRadius.circular(10),
+                            color: _accent.withValues(alpha: 0.04),
+                          ),
+                          child: Column(
+                            children: [
+                              for (int i = 0; i < cats.length; i++) ...[
+                                if (i > 0)
+                                  Divider(
+                                      height: 1,
+                                      color:
+                                          _accent.withValues(alpha: 0.15)),
+                                RadioListTile<String>(
+                                  value: cats[i].id,
+                                  groupValue: _provisionType,
+                                  onChanged: (v) =>
+                                      setState(() => _provisionType = v!),
+                                  activeColor: _accent,
+                                  dense: true,
+                                  title: Row(
+                                    children: [
+                                      Text(cats[i].emoji,
+                                          style: const TextStyle(
+                                              fontSize: 18)),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          cats[i].name,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
                   // Name
                   TextFormField(
@@ -1152,6 +1391,7 @@ class _ProductUploadPanelState extends State<_ProductUploadPanel> {
                   product: p,
                   accent: _accent,
                   onDelete: () async {
+                    final productsProvider = context.read<ProductsProvider>();
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (_) => AlertDialog(
@@ -1176,16 +1416,15 @@ class _ProductUploadPanelState extends State<_ProductUploadPanel> {
                       ),
                     );
                     if (confirm == true) {
-                      await context
-                          .read<ProductsProvider>()
-                          .deleteProduct(p.id);
+                      if (!mounted) return;
+                      await productsProvider.deleteProduct(p.id);
                     }
                   },
                 )),
 
           // ── Carousel Banner Upload (inline) ─────────────────────────────
           const SizedBox(height: 32),
-          Divider(color: _accent.withOpacity(0.2), thickness: 1),
+          Divider(color: _accent.withValues(alpha: 0.2), thickness: 1),
           const SizedBox(height: 8),
           _EmbeddedBannerSection(category: widget.category),
         ],
@@ -1223,12 +1462,77 @@ class _ProductTile extends StatelessWidget {
         title: Text(product.name,
             style: const TextStyle(
                 fontWeight: FontWeight.w600, fontSize: 14)),
-        subtitle: Text(
-          'GH₵ ${product.price.toStringAsFixed(2)}',
-          style: TextStyle(
-              color: accent,
-              fontWeight: FontWeight.bold,
-              fontSize: 13),
+        subtitle: Row(
+          children: [
+            Text(
+              'GH₵ ${product.price.toStringAsFixed(2)}',
+              style: TextStyle(
+                  color: accent,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13),
+            ),
+            if (product.drinkType.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              if (product.category == 'drink')
+                Builder(
+                  builder: (ctx) {
+                    final cats = ctx
+                        .read<CategoriesProvider>()
+                        .drinkCategories;
+                    final cat = cats
+                        .where((c) => c.id == product.drinkType)
+                        .firstOrNull;
+                    if (cat == null) return const SizedBox.shrink();
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Color(cat.colorValue)
+                            .withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${cat.emoji} ${cat.name}',
+                        style: TextStyle(
+                          color: Color(cat.colorValue),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  },
+                )
+              else
+                Builder(
+                  builder: (ctx) {
+                    final cats = ctx
+                        .read<CategoriesProvider>()
+                        .provisionCategories;
+                    final cat = cats
+                        .where((c) => c.id == product.drinkType)
+                        .firstOrNull;
+                    if (cat == null) return const SizedBox.shrink();
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Color(cat.colorValue)
+                            .withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${cat.emoji} ${cat.name}',
+                        style: TextStyle(
+                          color: Color(cat.colorValue),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ],
         ),
         trailing: IconButton(
           icon: const Icon(Icons.delete_outline_rounded,
@@ -1265,11 +1569,11 @@ class _ProductTile extends StatelessWidget {
       width: 52,
       height: 52,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(Icons.image_not_supported_outlined,
-          color: color.withOpacity(0.5), size: 24),
+          color: color.withValues(alpha: 0.5), size: 24),
     );
   }
 }
@@ -1299,13 +1603,13 @@ class _CarouselBannersTabState extends State<_CarouselBannersTab> {
                   label: 'Drinks',
                   icon: Icons.local_bar_outlined,
                   selected: _subTab == 0,
-                  accent: const Color(0xFF0077B6),
+                  accent: const Color(0xFFC62828),
                   onTap: () => setState(() => _subTab = 0)),
               _SubTab(
                   label: 'Provisions',
                   icon: Icons.shopping_basket_outlined,
                   selected: _subTab == 1,
-                  accent: const Color(0xFF2D6A4F),
+                  accent: const Color(0xFFC62828),
                   onTap: () => setState(() => _subTab = 1)),
             ],
           ),
@@ -1335,8 +1639,8 @@ class _EmbeddedBannerSectionState extends State<_EmbeddedBannerSection> {
   bool _isSaving = false;
 
   Color get _accent => widget.category == 'drink'
-      ? const Color(0xFF0077B6)
-      : const Color(0xFF2D6A4F);
+      ? const Color(0xFFC62828)
+      : const Color(0xFFC62828);
 
   String get _label =>
       widget.category == 'drink' ? 'Drinks' : 'Provisions';
@@ -1423,10 +1727,10 @@ class _EmbeddedBannerSectionState extends State<_EmbeddedBannerSection> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _accent.withOpacity(0.3)),
+            border: Border.all(color: _accent.withValues(alpha: 0.3)),
             boxShadow: [
               BoxShadow(
-                  color: _accent.withOpacity(0.06),
+                  color: _accent.withValues(alpha: 0.06),
                   blurRadius: 8,
                   offset: const Offset(0, 2)),
             ],
@@ -1460,7 +1764,7 @@ class _EmbeddedBannerSectionState extends State<_EmbeddedBannerSection> {
                   decoration: BoxDecoration(
                     border: Border.all(color: _accent),
                     borderRadius: BorderRadius.circular(12),
-                    color: _accent.withOpacity(0.04),
+                    color: _accent.withValues(alpha: 0.04),
                   ),
                   child: _pickedBytes != null
                       ? ClipRRect(
@@ -1483,7 +1787,7 @@ class _EmbeddedBannerSectionState extends State<_EmbeddedBannerSection> {
                             Text(
                                 'Recommended: 16:9 or wide landscape image',
                                 style: TextStyle(
-                                    color: _accent.withOpacity(0.6),
+                                    color: _accent.withValues(alpha: 0.6),
                                     fontSize: 12)),
                           ],
                         ),
@@ -1586,6 +1890,7 @@ class _EmbeddedBannerSectionState extends State<_EmbeddedBannerSection> {
                   dataUri: entry.value,
                   accent: _accent,
                   onDelete: () async {
+                    final carouselProvider = context.read<CarouselProvider>();
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (_) => AlertDialog(
@@ -1610,9 +1915,8 @@ class _EmbeddedBannerSectionState extends State<_EmbeddedBannerSection> {
                       ),
                     );
                     if (confirm == true) {
-                      await context
-                          .read<CarouselProvider>()
-                          .removeBanner(widget.category, entry.key);
+                      if (!mounted) return;
+                      await carouselProvider.removeBanner(widget.category, entry.key);
                     }
                   },
                 ),
@@ -1639,8 +1943,8 @@ class _BannerUploadPanelState extends State<_BannerUploadPanel> {
   bool _isSaving = false;
 
   Color get _accent => widget.category == 'drink'
-      ? const Color(0xFF0077B6)
-      : const Color(0xFF2D6A4F);
+      ? const Color(0xFFC62828)
+      : const Color(0xFFC62828);
 
   String get _label =>
       widget.category == 'drink' ? 'Drinks' : 'Provisions';
@@ -1711,10 +2015,10 @@ class _BannerUploadPanelState extends State<_BannerUploadPanel> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _accent.withOpacity(0.3)),
+              border: Border.all(color: _accent.withValues(alpha: 0.3)),
               boxShadow: [
                 BoxShadow(
-                    color: _accent.withOpacity(0.06),
+                    color: _accent.withValues(alpha: 0.06),
                     blurRadius: 8,
                     offset: const Offset(0, 2)),
               ],
@@ -1749,7 +2053,7 @@ class _BannerUploadPanelState extends State<_BannerUploadPanel> {
                       border: Border.all(
                           color: _accent, style: BorderStyle.solid),
                       borderRadius: BorderRadius.circular(12),
-                      color: _accent.withOpacity(0.04),
+                      color: _accent.withValues(alpha: 0.04),
                     ),
                     child: _pickedBytes != null
                         ? ClipRRect(
@@ -1772,7 +2076,7 @@ class _BannerUploadPanelState extends State<_BannerUploadPanel> {
                               Text(
                                   'Recommended: 16:9 or wide landscape image',
                                   style: TextStyle(
-                                      color: _accent.withOpacity(0.6),
+                                      color: _accent.withValues(alpha: 0.6),
                                       fontSize: 12)),
                             ],
                           ),
@@ -1876,6 +2180,7 @@ class _BannerUploadPanelState extends State<_BannerUploadPanel> {
                     dataUri: entry.value,
                     accent: _accent,
                     onDelete: () async {
+                      final carouselProvider = context.read<CarouselProvider>();
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (_) => AlertDialog(
@@ -1900,9 +2205,8 @@ class _BannerUploadPanelState extends State<_BannerUploadPanel> {
                         ),
                       );
                       if (confirm == true) {
-                        await context
-                            .read<CarouselProvider>()
-                            .removeBanner(widget.category, entry.key);
+                        if (!mounted) return;
+                        await carouselProvider.removeBanner(widget.category, entry.key);
                       }
                     },
                   ),
@@ -1939,9 +2243,9 @@ class _BannerTile extends StatelessWidget {
       imageWidget = Container(
         width: 72,
         height: 54,
-        color: accent.withOpacity(0.1),
+        color: accent.withValues(alpha: 0.1),
         child: Icon(Icons.broken_image_outlined,
-            color: accent.withOpacity(0.4)),
+            color: accent.withValues(alpha: 0.4)),
       );
     }
 

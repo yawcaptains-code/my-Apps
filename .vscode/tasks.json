@@ -7,6 +7,34 @@
 			"command": "flutter run -d windows",
 			"isBackground": true,
 			"problemMatcher": []
+		},
+		{
+			"label": "Flutter Run Edge",
+			"type": "shell",
+			"command": "flutter run -d edge",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter Run Edge",
+			"type": "shell",
+			"command": "flutter run -d edge",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter Run Edge",
+			"type": "shell",
+			"command": "flutter run -d edge",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter Run Edge",
+			"type": "shell",
+			"command": "flutter run -d edge",
+			"isBackground": true,
+			"problemMatcher": []
 		}
 	]
 }

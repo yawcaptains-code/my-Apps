@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/cart_provider.dart';
 
 /// Reusable AppBar cart icon that shows a red badge with the current quantity.
@@ -27,7 +28,16 @@ class CartIconBadge extends StatelessWidget {
         child: IconButton(
           icon: const Icon(Icons.shopping_cart_outlined),
           tooltip: 'View cart',
-          onPressed: () => Navigator.pushNamed(context, '/orders'),
+          onPressed: () async {
+            final prefs = await SharedPreferences.getInstance();
+            final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+            if (!context.mounted) return;
+            if (isLoggedIn) {
+              Navigator.pushNamed(context, '/orders');
+            } else {
+              Navigator.pushNamed(context, '/login');
+            }
+          },
         ),
       ),
     );

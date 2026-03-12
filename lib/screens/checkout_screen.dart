@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -72,6 +73,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     setState(() => _isLoading = false);
 
+    if (!mounted) return;
     // Show success dialog
     showDialog<void>(
       context: context,
@@ -92,10 +94,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final items = cart.items.values.toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: const Text('Checkout'),
-        backgroundColor: const Color(0xFF0077B6),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7F0000), Color(0xFFC62828), Color(0xFFEF5350)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: items.isEmpty
           ? const _EmptyCartHint()
@@ -185,10 +195,10 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: Color(0xFF023E8A),
+        color: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -213,21 +223,7 @@ class _OrderSummaryCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: item.category == 'drink'
-                          ? const Color(0xFFB0E0FF)
-                          : const Color(0xFFB7E4C7),
-                      child: Icon(
-                        item.category == 'drink'
-                            ? Icons.local_drink_rounded
-                            : Icons.shopping_basket_rounded,
-                        size: 16,
-                        color: item.category == 'drink'
-                            ? const Color(0xFF0077B6)
-                            : const Color(0xFF2D6A4F),
-                      ),
-                    ),
+                    _CartItemImage(item: item),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -376,7 +372,7 @@ class _PaymentSelector extends StatelessWidget {
     'AirtelTigo Money': _PaymentOption(
         'AirtelTigo Money', Icons.signal_cellular_alt, Color(0xFFFF6600)),
     'Direct Bank Transfer': _PaymentOption(
-        'Direct Bank Transfer', Icons.account_balance, Color(0xFF0077B6)),
+        'Direct Bank Transfer', Icons.account_balance, Color(0xFFC62828)),
     'Cash on Delivery': _PaymentOption(
         'Cash on Delivery', Icons.payments_outlined, Color(0xFF2ECC71)),
   };
@@ -390,9 +386,9 @@ class _PaymentSelector extends StatelessWidget {
       rows.add(
         Row(
           children: [
-            Expanded(child: _buildTile(left)),
+            Expanded(child: _buildTile(left, context)),
             const SizedBox(width: 10),
-            Expanded(child: right != null ? _buildTile(right) : const SizedBox()),
+            Expanded(child: right != null ? _buildTile(right, context) : const SizedBox()),
           ],
         ),
       );
@@ -401,7 +397,7 @@ class _PaymentSelector extends StatelessWidget {
     return Column(children: rows);
   }
 
-  Widget _buildTile(String option) {
+  Widget _buildTile(String option, BuildContext context) {
     final meta = _meta[option] ??
         _PaymentOption(option, Icons.credit_card, Colors.grey);
     final isSelected = option == selected;
@@ -412,7 +408,7 @@ class _PaymentSelector extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? meta.color.withOpacity(0.10) : Colors.white,
+          color: isSelected ? meta.color.withValues(alpha: 0.10) : Theme.of(context).colorScheme.surface,
           border: Border.all(
             color: isSelected ? meta.color : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
@@ -427,7 +423,7 @@ class _PaymentSelector extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: meta.color.withOpacity(0.15),
+                color: meta.color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(meta.icon, color: meta.color, size: 24),
@@ -440,7 +436,7 @@ class _PaymentSelector extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? meta.color : Colors.black87,
+                color: isSelected ? meta.color : Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 6),
@@ -468,7 +464,7 @@ class _GrandTotalRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0077B6),
+        color: const Color(0xFFC62828),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -509,7 +505,7 @@ class _OrderSuccessDialog extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
           const Icon(Icons.check_circle_rounded,
-              color: Color(0xFF52B788), size: 72),
+              color: Color(0xFFEF5350), size: 72),
           const SizedBox(height: 16),
           const Text(
             'Order Placed!',
@@ -568,6 +564,53 @@ class _EmptyCartHint extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Cart item image (real photo or fallback icon) ─────────────────────────────
+
+class _CartItemImage extends StatelessWidget {
+  final CartItem item;
+  const _CartItemImage({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final url = item.imageUrl;
+    final bg = item.category == 'drink'
+        ? const Color(0xFFB0E0FF)
+        : const Color(0xFFB7E4C7);
+    final icon = item.category == 'drink'
+        ? Icons.local_drink_rounded
+        : Icons.shopping_basket_rounded;
+
+    Widget child;
+    if (url.startsWith('data:')) {
+      try {
+        final comma = url.indexOf(',');
+        final bytes = base64Decode(url.substring(comma + 1).trim());
+        child = ClipOval(
+          child: Image.memory(bytes, width: 32, height: 32, fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Icon(icon, size: 16, color: const Color(0xFFC62828))),
+        );
+      } catch (_) {
+        child = Icon(icon, size: 16, color: const Color(0xFFC62828));
+      }
+    } else if (url.isNotEmpty) {
+      child = ClipOval(
+        child: Image.network(url, width: 32, height: 32, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) =>
+                Icon(icon, size: 16, color: const Color(0xFFC62828))),
+      );
+    } else {
+      child = Icon(icon, size: 16, color: const Color(0xFFC62828));
+    }
+
+    return CircleAvatar(
+      radius: 16,
+      backgroundColor: bg,
+      child: child,
     );
   }
 }

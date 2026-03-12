@@ -40,7 +40,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _init() async {
     // Load persisted data in parallel
-    final [prefs, _, __, ___, ____, _____] = await Future.wait([
+    final results = await Future.wait([
       SharedPreferences.getInstance(),
       context.read<CartProvider>().loadFromPrefs(),
       context.read<OrdersProvider>().loadFromPrefs(),
@@ -48,13 +48,14 @@ class _SplashScreenState extends State<SplashScreen>
       context.read<CarouselProvider>().loadFromPrefs(),
       context.read<CategoriesProvider>().loadFromPrefs(),
     ]);
+    final prefs = results[0] as SharedPreferences;
 
     // Minimum splash display
     await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
 
     // First-time users see onboarding; returning users go straight to home
-    final seen = (prefs as SharedPreferences).getBool('onboarding_done') ?? false;
+    final seen = prefs.getBool('onboarding_done') ?? false;
     Navigator.pushReplacementNamed(context, seen ? '/home' : '/onboarding');
   }
 
@@ -70,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen>
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF023E8A), Color(0xFF0096C7)],
+            colors: [Color(0xFF7F0000), Color(0xFFEF5350)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -80,7 +81,7 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // ── Animated logo ────────────────────────────────────────
+                // â”€â”€ Animated logo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 ScaleTransition(
                   scale: _scaleAnim,
                   child: FadeTransition(
@@ -88,7 +89,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -101,7 +102,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: 28),
 
-                // ── App name ─────────────────────────────────────────────
+                // â”€â”€ App name â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 FadeTransition(
                   opacity: _fadeAnim,
                   child: const Column(
@@ -117,7 +118,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Your one-stop shop in Ghana 🇬🇭',
+                        'Your one-stop shop in Ghana ðŸ‡¬ðŸ‡­',
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 14,
@@ -129,7 +130,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                 const SizedBox(height: 60),
 
-                // ── Spinner ───────────────────────────────────────────────
+                // â”€â”€ Spinner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 const SpinKitThreeBounce(
                   color: Colors.white54,
                   size: 30,

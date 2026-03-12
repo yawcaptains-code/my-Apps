@@ -6,6 +6,9 @@ import 'providers/orders_provider.dart';
 import 'providers/products_provider.dart';
 import 'providers/carousel_provider.dart';
 import 'providers/categories_provider.dart';
+import 'providers/contact_info_provider.dart';
+import 'providers/home_shop_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/main_shell.dart';
@@ -20,6 +23,11 @@ import 'screens/chat_screen.dart';
 import 'screens/admin_login_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/admin_page2_screen.dart';
+import 'screens/admin_page3_screen.dart';
+import 'screens/admin_page4_screen.dart';
+import 'screens/admin_page5_screen.dart';
+import 'screens/admin_page6_screen.dart';
+import 'screens/admin_page7_screen.dart';
 import 'screens/carousel_preview_screen.dart';
 
 void main() {
@@ -31,6 +39,9 @@ void main() {
         ChangeNotifierProvider(create: (_) => ProductsProvider()),
         ChangeNotifierProvider(create: (_) => CategoriesProvider()),
         ChangeNotifierProvider(create: (_) => CarouselProvider()),
+        ChangeNotifierProvider(create: (_) => ContactInfoProvider()),
+        ChangeNotifierProvider(create: (_) => HomeShopProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: const DrinkProvisionApp(),
     ),
@@ -42,21 +53,23 @@ class DrinkProvisionApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
     return MaterialApp(
       title: 'Drink & Provision Hub',
       debugShowCheckedModeBanner: false,
+      themeMode: themeProvider.themeMode,
 
       // ── Material 3 Theme ──────────────────────────────────────────────────
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0077B6),
+          seedColor: const Color(0xFFC62828),
           brightness: Brightness.light,
         ),
         appBarTheme: const AppBarTheme(
           centerTitle: true,
           elevation: 2,
-          backgroundColor: Color(0xFF0077B6),
+          backgroundColor: Color(0xFFC62828),
           foregroundColor: Colors.white,
           titleTextStyle: TextStyle(
             fontSize: 20,
@@ -66,7 +79,7 @@ class DrinkProvisionApp extends StatelessWidget {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0077B6),
+            backgroundColor: const Color(0xFFC62828),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -75,6 +88,50 @@ class DrinkProvisionApp extends StatelessWidget {
           ),
         ),
         cardTheme: CardThemeData(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFFC62828),
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 2,
+          backgroundColor: Color(0xFF1E1E1E),
+          foregroundColor: Colors.white,
+          titleTextStyle: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFC62828),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          ),
+        ),
+        cardTheme: CardThemeData(
+          color: const Color(0xFF1E1E1E),
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -113,6 +170,15 @@ class DrinkProvisionApp extends StatelessWidget {
         '/admin-login': (ctx) => const AdminLoginScreen(),
         '/admin-dashboard': (ctx) => const AdminDashboardScreen(),
         '/admin-page2': (ctx) => const AdminPage2Screen(),
+        '/admin-page3': (ctx) {
+          final tab =
+              (ModalRoute.of(ctx)?.settings.arguments as int?) ?? 0;
+          return AdminPage3Screen(initialTab: tab);
+        },
+        '/admin-page4': (ctx) => const AdminPage4Screen(),
+        '/admin-page5': (ctx) => const AdminPage5Screen(),
+        '/admin-page6': (ctx) => const AdminPage6Screen(),
+        '/admin-page7': (ctx) => const AdminPage7Screen(),
         '/carousel-preview': (ctx) => const CarouselPreviewScreen(),
       },
     );

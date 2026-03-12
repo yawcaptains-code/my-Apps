@@ -41,10 +41,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ModalRoute.of(context)!.settings.arguments as ProductDetailArgs;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       body: CustomScrollView(
         slivers: [
-          // ── Hero app bar ─────────────────────────────────────────────────
+          // â”€â”€ Hero app bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           SliverAppBar(
             expandedHeight: 260,
             pinned: true,
@@ -53,7 +52,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [args.color, args.color.withOpacity(0.6)],
+                    colors: [args.color, args.color.withValues(alpha: 0.6)],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -78,7 +77,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ],
           ),
 
-          // ── Content ──────────────────────────────────────────────────────
+          // â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -101,10 +100,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(width: 12),
                       Chip(
                         label: Text(
-                          args.category == 'drink' ? '🥤 Drink' : '🛒 Provision',
+                          args.category == 'drink' ? 'ðŸ¥¤ Drink' : 'ðŸ›’ Provision',
                           style: const TextStyle(fontSize: 12),
                         ),
-                        backgroundColor: args.color.withOpacity(0.12),
+                        backgroundColor: args.color.withValues(alpha: 0.12),
                         side: BorderSide.none,
                       ),
                     ],
@@ -114,7 +113,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   // Price
                   Text(
-                    'GH₵ ${args.price.toStringAsFixed(2)}',
+                    'GHâ‚µ ${args.price.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
@@ -133,8 +132,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   const SizedBox(height: 8),
                   Text(
                     args.description,
-                    style: const TextStyle(
-                        fontSize: 14, height: 1.7, color: Colors.black87),
+                    style: TextStyle(
+                        fontSize: 14, height: 1.7, color: Theme.of(context).colorScheme.onSurface),
                   ),
 
                   const SizedBox(height: 24),
@@ -147,13 +146,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   // Product meta
                   _MetaRow(label: 'Category', value: args.category == 'drink' ? 'Drink' : 'Provision'),
                   const SizedBox(height: 8),
-                  const _MetaRow(label: 'Availability', value: 'In Stock ✅'),
+                  const _MetaRow(label: 'Availability', value: 'In Stock âœ…'),
                   const SizedBox(height: 8),
                   const _MetaRow(label: 'Delivery', value: 'Same-day within Accra'),
 
                   const SizedBox(height: 28),
 
-                  // ── Quantity picker ───────────────────────────────────────
+                  // â”€â”€ Quantity picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   Row(
                     children: [
                       const Text(
@@ -192,7 +191,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: args.color.withOpacity(0.08),
+                      color: args.color.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -201,7 +200,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         const Text('Subtotal',
                             style: TextStyle(fontWeight: FontWeight.w500)),
                         Text(
-                          'GH₵ ${(args.price * _qty).toStringAsFixed(2)}',
+                          'GHâ‚µ ${(args.price * _qty).toStringAsFixed(2)}',
                           style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -237,7 +236,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ..hideCurrentSnackBar()
                           ..showSnackBar(SnackBar(
                             content: Text(
-                                '$_qty × ${args.name} added to cart!'),
+                                '$_qty Ã— ${args.name} added to cart!'),
                             backgroundColor: args.color,
                             behavior: SnackBarBehavior.floating,
                             action: SnackBarAction(
@@ -267,7 +266,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _MetaRow extends StatelessWidget {
   final String label;

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Simple customer registration screen.
@@ -24,6 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _obscurePassword = true;
   bool _isLoading = false;
+  String _avatar = ''; // base64-encoded profile photo
 
   @override
   void dispose() {
@@ -32,6 +35,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAvatar() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
+    setState(() => _avatar = base64Encode(bytes));
   }
 
   Future<void> _submit() async {
@@ -47,13 +63,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     // ── Persist profile to SharedPreferences ──────────────────────────────
     final prefs = await SharedPreferences.getInstance();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    // ── Admin credentials check ────────────────────────────────────────────
+    const adminEmail = 'Abmin@2026.com';
+    const adminPassword = 'MKT@2026#heavenminded';
+    if (email.toLowerCase() == adminEmail.toLowerCase() &&
+        password == adminPassword) {
+      await prefs.setBool('is_admin', true);
+      await prefs.setString('profile_email', adminEmail);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      Navigator.pushNamedAndRemoveUntil(
+          context, '/admin-dashboard', (route) => false);
+      return;
+    }
+    // ───────────────────────────────────────────────────────────────────────────
+
     await prefs.setString('profile_name', _nameController.text.trim());
     await prefs.setString('profile_phone', _phoneController.text.trim());
-    final email = _emailController.text.trim();
     if (email.isNotEmpty) {
       await prefs.setString('profile_email', email);
     }
-    await prefs.setBool('is_logged_in', true);
+    await prefs.setString('profile_password', password);
+    if (_avatar.isNotEmpty) {
+      await prefs.setString('profile_avatar', _avatar);
+    }
+    await prefs.setBool('is_logged_in', false); // user must sign in
     // ─────────────────────────────────────────────────────────────────────────
 
     if (!mounted) return;
@@ -61,26 +98,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '🎉  Welcome, ${_nameController.text.trim()}! '
-          'Registration successful.',
+          '🎉  Account created, ${_nameController.text.trim()}! '
+          'Please sign in to continue.',
         ),
-        backgroundColor: const Color(0xFF2D6A4F),
+        backgroundColor: const Color(0xFFC62828),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
       ),
     );
 
-    // Navigate to home after successful registration.
-    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+    // Redirect to login so the user must sign in after registration.
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F8FF),
       appBar: AppBar(
         title: const Text('Create an Account'),
-        backgroundColor: const Color(0xFF0077B6),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7F0000), Color(0xFFC62828), Color(0xFFEF5350)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -91,15 +136,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               const SizedBox(height: 12),
 
-              // Header illustration
+              // Header: tappable avatar with camera badge
               Center(
-                child: CircleAvatar(
-                  radius: 52,
-                  backgroundColor: const Color(0xFFB0E0FF),
-                  child: const Icon(
-                    Icons.person_add_alt_1_rounded,
-                    size: 56,
-                    color: Color(0xFF0077B6),
+                child: GestureDetector(
+                  onTap: _pickAvatar,
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        radius: 52,
+                        backgroundColor: const Color(0xFFB0E0FF),
+                        backgroundImage: _avatar.isNotEmpty
+                            ? MemoryImage(base64Decode(_avatar))
+                            : null,
+                        child: _avatar.isEmpty
+                            ? const Icon(
+                                Icons.person_add_alt_1_rounded,
+                                size: 56,
+                                color: Color(0xFFC62828),
+                              )
+                            : null,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFC62828),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt_rounded,
+                            size: 16, color: Colors.white),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -111,7 +178,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF023E8A),
+                    color: Color(0xFF7F0000),
                   ),
                 ),
               ),
@@ -240,10 +307,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // ── Already have account ──────────────────────────────────────
               Center(
                 child: TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    } else {
+                      Navigator.pushReplacementNamed(context, '/login');
+                    }
+                  },
                   child: const Text(
                     'Already have an account? Go back',
-                    style: TextStyle(color: Color(0xFF0077B6)),
+                    style: TextStyle(color: Color(0xFFC62828)),
                   ),
                 ),
               ),

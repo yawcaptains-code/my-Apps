@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/cart_provider.dart';
+import '../providers/contact_info_provider.dart';
 import '../models/cart_item.dart';
 
 /// Orders / Cart screen – shows all items added from both Drinks and Provisions,
@@ -13,13 +16,22 @@ class OrdersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final contact = context.watch<ContactInfoProvider>();
     final items = cart.items.values.toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: const Text('My Cart & Orders'),
-        backgroundColor: const Color(0xFF0077B6),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7F0000), Color(0xFFC62828), Color(0xFFEF5350)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         actions: [
           // Clear cart button
           if (items.isNotEmpty)
@@ -74,30 +86,37 @@ class OrdersScreen extends StatelessWidget {
                     icon: Icons.chat_bubble_outline_rounded,
                     label: 'Message Chat',
                     subtitle: 'Open in-app chat with support',
-                    color: const Color(0xFF0077B6),
+                    color: const Color(0xFFC62828),
                     onTap: () => Navigator.pushNamed(context, '/chat'),
                   ),
                   _ContactOption(
                     icon: Icons.phone_outlined,
                     label: 'Phone Call',
-                    subtitle: 'Call our support line',
-                    color: const Color(0xFF2EC4B6),
-                    onTap: () => _launch('tel:+233244000000'),
+                    subtitle: contact.phone.isNotEmpty
+                        ? contact.phone
+                        : 'Call our support line',
+                    color: const Color(0xFFEF9A9A),
+                    onTap: contact.phoneUri.isNotEmpty
+                        ? () => _launch(contact.phoneUri)
+                        : null,
                   ),
                   _ContactOption(
                     icon: Icons.message_rounded,
                     label: 'WhatsApp',
-                    subtitle: 'Chat with us on WhatsApp',
+                    subtitle: contact.whatsapp.isNotEmpty
+                        ? contact.whatsapp
+                        : 'Chat with us on WhatsApp',
                     color: const Color(0xFF25D366),
-                    onTap: () => _launch(
-                        'https://wa.me/233244000000?text=Hello%2C%20I%20would%20like%20to%20place%20an%20order'),
+                    onTap: contact.whatsappUri.isNotEmpty
+                        ? () => _launch(contact.whatsappUri)
+                        : null,
                   ),
                   _ContactOption(
                     icon: Icons.flag_outlined,
                     label: 'Report an Issue',
                     subtitle: 'Let us know about a problem',
                     color: const Color(0xFFE76F51),
-                    onTap: () => _launch('mailto:support@drinkprovisionhub.com?subject=Issue%20Report'),
+                    onTap: () => _showReportDialog(context),
                   ),
 
                   const SizedBox(height: 24),
@@ -110,8 +129,8 @@ class OrdersScreen extends StatelessWidget {
                         Navigator.pushNamed(context, '/order-history'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
-                      side: const BorderSide(color: Color(0xFF0077B6)),
-                      foregroundColor: const Color(0xFF0077B6),
+                      side: const BorderSide(color: Color(0xFFC62828)),
+                      foregroundColor: const Color(0xFFC62828),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
@@ -132,7 +151,7 @@ class OrdersScreen extends StatelessWidget {
                           Navigator.pushNamed(context, '/checkout'),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: const Color(0xFF52B788),
+                        backgroundColor: const Color(0xFFEF5350),
                       ),
                     ),
                   ),
@@ -167,6 +186,96 @@ class OrdersScreen extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  Future<void> _showReportDialog(BuildContext context) async {
+    final nameCtrl = TextEditingController();
+    final issueCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          Icon(Icons.flag_outlined, color: Colors.orange.shade700),
+          const SizedBox(width: 8),
+          const Text('Report an Issue'),
+        ]),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Your Name (optional)',
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: issueCtrl,
+                  maxLines: 4,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Describe the issue',
+                    alignLabelWithHint: true,
+                    prefixIcon: Icon(Icons.edit_note_rounded),
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Please describe the issue'
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel')),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.send_rounded),
+            label: const Text('Submit'),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE76F51)),
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              Navigator.pop(ctx);
+              // Save to SharedPreferences so admin can view it
+              final prefs = await SharedPreferences.getInstance();
+              final raw = prefs.getString('user_reports');
+              final List<dynamic> list =
+                  raw != null ? jsonDecode(raw) as List<dynamic> : [];
+              list.add({
+                'id': DateTime.now().microsecondsSinceEpoch.toString(),
+                'name': nameCtrl.text.trim().isEmpty
+                    ? 'Anonymous'
+                    : nameCtrl.text.trim(),
+                'issue': issueCtrl.text.trim(),
+                'timestamp': DateTime.now().toIso8601String(),
+                'read': false,
+              });
+              await prefs.setString('user_reports', jsonEncode(list));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        '✅  Your report has been submitted. Thank you!'),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: Color(0xFFC62828),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -225,18 +334,13 @@ class _CartItemTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            // Category icon
-            CircleAvatar(
-              backgroundColor: item.category == 'drink'
-                  ? const Color(0xFFB0E0FF)
-                  : const Color(0xFFB7E4C7),
-              child: Icon(
-                item.category == 'drink'
-                    ? Icons.local_drink_rounded
-                    : Icons.shopping_basket_rounded,
-                color: item.category == 'drink'
-                    ? const Color(0xFF0077B6)
-                    : const Color(0xFF2D6A4F),
+            // Product image or fallback icon
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                width: 48,
+                height: 48,
+                child: _buildItemImage(item),
               ),
             ),
             const SizedBox(width: 12),
@@ -287,13 +391,42 @@ class _CartItemTile extends StatelessWidget {
               textAlign: TextAlign.right,
               style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0077B6),
+                  color: Color(0xFFC62828),
                   fontSize: 13),
             ),
           ],
         ),
       ),
     );
+  }
+
+  static Widget _buildItemImage(CartItem item) {
+    final url = item.imageUrl;
+    if (url.isEmpty) {
+      return Container(
+        color: item.category == 'drink'
+            ? const Color(0xFFB0E0FF)
+            : const Color(0xFFB7E4C7),
+        child: Icon(
+          item.category == 'drink'
+              ? Icons.local_drink_rounded
+              : Icons.shopping_basket_rounded,
+          color: const Color(0xFFC62828),
+          size: 28,
+        ),
+      );
+    }
+    if (url.startsWith('data:')) {
+      try {
+        final bytes = base64Decode(url.split(',')[1]);
+        return Image.memory(bytes, fit: BoxFit.cover);
+      } catch (_) {}
+    }
+    return Image.network(url, fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: const Color(0xFFEEEEEE),
+          child: const Icon(Icons.broken_image_outlined, size: 28),
+        ));
   }
 }
 
@@ -315,9 +448,9 @@ class _QtyButton extends StatelessWidget {
         height: 30,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFF0077B6)),
+          border: Border.all(color: const Color(0xFFC62828)),
         ),
-        child: Icon(icon, size: 16, color: const Color(0xFF0077B6)),
+        child: Icon(icon, size: 16, color: const Color(0xFFC62828)),
       ),
     );
   }
@@ -334,7 +467,7 @@ class _TotalTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0077B6),
+        color: const Color(0xFFC62828),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -368,27 +501,27 @@ class _PaymentInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFB0E0FF), width: 1.5),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.payment_rounded, color: Color(0xFF0077B6)),
+              Icon(Icons.payment_rounded, color: Color(0xFFC62828)),
               SizedBox(width: 8),
               Text(
                 'Payment Methods',
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: Color(0xFF023E8A)),
+                    color: Color(0xFF7F0000)),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _PaymentMethod(
               icon: Icons.phone_android_rounded,
               text: 'MTN Mobile Money (MoMo)'),
@@ -439,11 +572,11 @@ class _BulkPurchaseNote extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFFFBEB),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFD4A017).withOpacity(0.4)),
+        border: Border.all(color: const Color(0xFFD4A017).withValues(alpha: 0.4)),
       ),
-      child: Row(
+      child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Icon(Icons.info_outline_rounded,
               color: Color(0xFFD4A017), size: 20),
           SizedBox(width: 10),
@@ -467,31 +600,41 @@ class _ContactOption extends StatelessWidget {
   final String label;
   final String subtitle;
   final Color color;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _ContactOption({
     required this.icon,
     required this.label,
     required this.subtitle,
     required this.color,
-    required this.onTap,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        enabled: enabled,
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.15),
-          child: Icon(icon, color: color),
+          backgroundColor:
+              enabled ? color.withValues(alpha: 0.15) : Colors.grey.withValues(alpha: 0.1),
+          child: Icon(icon, color: enabled ? color : Colors.grey.shade400),
         ),
         title: Text(label,
             style:
                 const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        subtitle: Text(subtitle,
-            style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        trailing: const Icon(Icons.chevron_right),
+        subtitle: Text(
+          enabled ? subtitle : 'Not configured — set in Admin Page 3',
+          style: TextStyle(
+              fontSize: 12,
+              color: enabled ? Colors.grey : Colors.orange.shade700),
+        ),
+        trailing: Icon(
+          enabled ? Icons.chevron_right : Icons.settings_outlined,
+          color: enabled ? null : Colors.orange.shade400,
+        ),
         onTap: onTap,
       ),
     );
@@ -509,7 +652,7 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-          fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF023E8A)),
+          fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF7F0000)),
     );
   }
 }

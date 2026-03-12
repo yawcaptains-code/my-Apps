@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -55,7 +55,7 @@ class CategoriesProvider extends ChangeNotifier {
             id: 'non_alcoholic',
             name: 'Non-Alcoholic Beverages',
             emoji: '🥤',
-            colorValue: 0xFF2EC4B6),
+            colorValue: 0xFFEF9A9A),
       ];
 
   // Default provision categories
@@ -64,7 +64,7 @@ class CategoriesProvider extends ChangeNotifier {
             id: 'biscuits',
             name: 'Biscuits & Snacks',
             emoji: '🍪',
-            colorValue: 0xFF52B788),
+            colorValue: 0xFFEF5350),
         ShopCategory(
             id: 'cooking',
             name: 'Cooking Ingredients',
@@ -74,7 +74,7 @@ class CategoriesProvider extends ChangeNotifier {
             id: 'soap',
             name: 'Soap & Detergents',
             emoji: '🧼',
-            colorValue: 0xFF457B9D),
+            colorValue: 0xFFE57373),
       ];
 
   List<ShopCategory> _drinkCats = [];

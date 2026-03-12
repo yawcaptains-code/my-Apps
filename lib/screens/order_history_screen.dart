@@ -1,24 +1,58 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/orders_provider.dart';
 import '../models/order.dart';
+import '../models/cart_item.dart';
 
 /// Full list of past orders, stored locally. Accessible from ProfileScreen
 /// and also linked from OrdersScreen.
-class OrderHistoryScreen extends StatelessWidget {
+class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
+
+  @override
+  State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
+}
+
+class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  Future<void> _loadOrders() async {
+    setState(() => _loading = true);
+    await context.read<OrdersProvider>().loadFromPrefs();
+    if (mounted) setState(() => _loading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
     final orders = context.watch<OrdersProvider>().orders;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: const Text('Order History'),
-        backgroundColor: const Color(0xFF0077B6),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7F0000), Color(0xFFC62828), Color(0xFFEF5350)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh',
+            onPressed: _loadOrders,
+          ),
           if (orders.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep_outlined),
@@ -48,14 +82,16 @@ class OrderHistoryScreen extends StatelessWidget {
             ),
         ],
       ),
-      body: orders.isEmpty
-          ? _EmptyHistory()
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: orders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (ctx, i) => _OrderCard(order: orders[i]),
-            ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : orders.isEmpty
+              ? _EmptyHistory()
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: orders.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (ctx, i) => _OrderCard(order: orders[i]),
+                ),
     );
   }
 }
@@ -99,9 +135,9 @@ class _OrderCard extends StatelessWidget {
   Color get _statusColor {
     switch (order.status) {
       case 'Confirmed':
-        return const Color(0xFF0077B6);
+        return const Color(0xFFC62828);
       case 'Delivered':
-        return const Color(0xFF52B788);
+        return const Color(0xFFEF5350);
       default:
         return const Color(0xFFD4A017);
     }
@@ -130,7 +166,7 @@ class _OrderCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _statusColor.withOpacity(0.12),
+                      color: _statusColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -159,14 +195,15 @@ class _OrderCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 3),
                     child: Row(
                       children: [
-                        Icon(
-                          item.category == 'drink'
-                              ? Icons.local_drink_rounded
-                              : Icons.shopping_basket_rounded,
-                          size: 14,
-                          color: Colors.grey,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: SizedBox(
+                            width: 36,
+                            height: 36,
+                            child: _productImage(item),
+                          ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         Expanded(
                             child: Text(item.name,
                                 style: const TextStyle(fontSize: 12))),
@@ -192,7 +229,7 @@ class _OrderCard extends StatelessWidget {
                     'GH₵ ${order.total.toStringAsFixed(2)}',
                     style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0077B6),
+                        color: Color(0xFFC62828),
                         fontSize: 15),
                   ),
                 ],
@@ -207,7 +244,7 @@ class _OrderCard extends StatelessWidget {
   void _showDetail(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -278,7 +315,15 @@ class _OrderDetailSheet extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
-                      const SizedBox(width: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: _productImage(item),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       Expanded(
                           child: Text(item.name,
                               style: const TextStyle(fontSize: 13))),
@@ -302,7 +347,7 @@ class _OrderDetailSheet extends StatelessWidget {
                   'Total: GH₵ ${order.total.toStringAsFixed(2)}',
                   style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF0077B6),
+                      color: Color(0xFFC62828),
                       fontSize: 16),
                 ),
               ],
@@ -324,6 +369,36 @@ class _OrderDetailSheet extends StatelessWidget {
   }
 }
 
+// ── Shared product image helper ─────────────────────────────────────────────────────
+Widget _productImage(CartItem item) {
+  final url = item.imageUrl;
+  if (url.isEmpty) {
+    return Container(
+      color: item.category == 'drink'
+          ? const Color(0xFFB0E0FF)
+          : const Color(0xFFB7E4C7),
+      child: Icon(
+        item.category == 'drink'
+            ? Icons.local_drink_rounded
+            : Icons.shopping_basket_rounded,
+        color: const Color(0xFFC62828),
+        size: 22,
+      ),
+    );
+  }
+  if (url.startsWith('data:')) {
+    try {
+      final bytes = base64Decode(url.split(',')[1]);
+      return Image.memory(bytes, fit: BoxFit.cover);
+    } catch (_) {}
+  }
+  return Image.network(url, fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(
+        color: const Color(0xFFEEEEEE),
+        child: const Icon(Icons.broken_image_outlined, size: 22),
+      ));
+}
+
 class _Label extends StatelessWidget {
   final String text;
   const _Label(this.text);
@@ -331,7 +406,7 @@ class _Label extends StatelessWidget {
   Widget build(BuildContext context) => Text(text,
       style: const TextStyle(
           fontWeight: FontWeight.bold,
-          color: Color(0xFF023E8A),
+          color: Color(0xFF7F0000),
           fontSize: 13));
 }
 

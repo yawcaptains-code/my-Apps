@@ -1,5 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../providers/theme_provider.dart';
 
 /// User profile / account screen.
 ///
@@ -13,16 +18,18 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  static const _nameKey = 'profile_name';
-  static const _phoneKey = 'profile_phone';
-  static const _emailKey = 'profile_email';
+  static const _nameKey    = 'profile_name';
+  static const _phoneKey   = 'profile_phone';
+  static const _emailKey   = 'profile_email';
   static const _addressKey = 'profile_address';
+  static const _avatarKey  = 'profile_avatar';
 
-  String _name = '';
-  String _phone = '';
-  String _email = '';
+  String _name    = '';
+  String _phone   = '';
+  String _email   = '';
   String _address = '';
-  bool _isAdmin = false;
+  String _avatar  = '';   // base64-encoded image
+  bool   _isAdmin = false;
 
   @override
   void initState() {
@@ -33,12 +40,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _name = prefs.getString(_nameKey) ?? '';
-      _phone = prefs.getString(_phoneKey) ?? '';
-      _email = prefs.getString(_emailKey) ?? '';
+      _name    = prefs.getString(_nameKey)    ?? '';
+      _phone   = prefs.getString(_phoneKey)   ?? '';
+      _email   = prefs.getString(_emailKey)   ?? '';
       _address = prefs.getString(_addressKey) ?? '';
-      _isAdmin = prefs.getBool('is_admin') ?? false;
+      _avatar  = prefs.getString(_avatarKey)  ?? '';
+      _isAdmin = prefs.getBool('is_admin')    ?? false;
     });
+  }
+
+  Future<void> _pickAvatar() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
+    final b64 = base64Encode(bytes);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_avatarKey, b64);
+    setState(() => _avatar = b64);
   }
 
   Future<void> _save(
@@ -66,7 +90,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -133,11 +157,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                     if (!ctx.mounted) return;
                     Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(ctx).showSnackBar(
                       const SnackBar(
                         content: Text('Profile saved! ✅'),
                         behavior: SnackBarBehavior.floating,
-                        backgroundColor: Color(0xFF52B788),
+                        backgroundColor: Color(0xFFEF5350),
                       ),
                     );
                   },
@@ -156,10 +180,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isLoggedIn = _name.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F8FF),
       appBar: AppBar(
         title: const Text('My Profile'),
-        backgroundColor: const Color(0xFF0077B6),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7F0000), Color(0xFFC62828), Color(0xFFEF5350)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
@@ -173,7 +205,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           children: [
             // ── Header ────────────────────────────────────────────────────
-            _ProfileHeader(name: _name, phone: _phone, isLoggedIn: isLoggedIn),
+            _ProfileHeader(
+              name: _name,
+              phone: _phone,
+              isLoggedIn: isLoggedIn,
+              avatar: _avatar,
+              onPickAvatar: _pickAvatar,
+            ),
 
             const SizedBox(height: 20),
 
@@ -235,7 +273,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     trailing: Switch(
                       value: true,
                       onChanged: (_) => _snack(context, 'Notification settings coming soon.'),
-                      activeThumbColor: const Color(0xFF0077B6),
+                      activeThumbColor: const Color(0xFFC62828),
                     ),
                     onTap: () {},
                   ),
@@ -243,11 +281,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.dark_mode_outlined,
                     label: 'Dark Mode',
                     trailing: Switch(
-                      value: false,
-                      onChanged: (_) => _snack(context, 'Dark mode coming soon.'),
-                      activeThumbColor: const Color(0xFF0077B6),
+                      value: context.watch<ThemeProvider>().isDark,
+                      onChanged: (_) => context.read<ThemeProvider>().toggle(),
+                      activeThumbColor: const Color(0xFFC62828),
                     ),
-                    onTap: () {},
+                    onTap: () => context.read<ThemeProvider>().toggle(),
                   ),
                   _ProfileAction(
                     icon: Icons.info_outline_rounded,
@@ -273,7 +311,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF003557), Color(0xFF0077B6)],
+                            colors: [Color(0xFF4A0000), Color(0xFFC62828)],
                           ),
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -323,6 +361,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           await prefs.remove(_phoneKey);
                           await prefs.remove(_emailKey);
                           await prefs.remove(_addressKey);
+                          await prefs.remove(_avatarKey);
                           await prefs.setBool('is_admin', false);
                           await _load();
                           if (!context.mounted) return;
@@ -364,17 +403,32 @@ class _ProfileHeader extends StatelessWidget {
   final String name;
   final String phone;
   final bool isLoggedIn;
-  const _ProfileHeader(
-      {required this.name, required this.phone, required this.isLoggedIn});
+  final String avatar;
+  final VoidCallback onPickAvatar;
+
+  const _ProfileHeader({
+    required this.name,
+    required this.phone,
+    required this.isLoggedIn,
+    required this.avatar,
+    required this.onPickAvatar,
+  });
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider? avatarImage;
+    if (avatar.isNotEmpty) {
+      try {
+        avatarImage = MemoryImage(base64Decode(avatar));
+      } catch (_) {}
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF023E8A), Color(0xFF0096C7)],
+          colors: [Color(0xFF7F0000), Color(0xFFEF5350)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -383,15 +437,37 @@ class _ProfileHeader extends StatelessWidget {
       ),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 44,
-            backgroundColor: Colors.white24,
-            child: Text(
-              isLoggedIn && name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: const TextStyle(
-                  fontSize: 38,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
+          GestureDetector(
+            onTap: onPickAvatar,
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                CircleAvatar(
+                  radius: 44,
+                  backgroundColor: Colors.white24,
+                  backgroundImage: avatarImage,
+                  child: avatarImage == null
+                      ? Text(
+                          isLoggedIn && name.isNotEmpty
+                              ? name[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                              fontSize: 38,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        )
+                      : null,
+                ),
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFC62828),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded,
+                      size: 14, color: Colors.white),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 14),
@@ -408,7 +484,7 @@ class _ProfileHeader extends StatelessWidget {
                 ? (phone.isEmpty ? 'Tap ✏️ to add phone' : phone)
                 : 'Sign in to unlock all features',
             style: TextStyle(
-                color: Colors.white.withOpacity(0.75), fontSize: 13),
+                color: Colors.white.withValues(alpha: 0.75), fontSize: 13),
           ),
         ],
       ),
@@ -426,7 +502,7 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8, top: 4),
       child: Text(text,
           style: const TextStyle(
-              color: Color(0xFF0077B6),
+              color: Color(0xFFC62828),
               fontWeight: FontWeight.bold,
               fontSize: 13,
               letterSpacing: 0.5)),
@@ -447,7 +523,7 @@ class _InfoTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         dense: true,
-        leading: Icon(icon, color: const Color(0xFF0077B6), size: 20),
+        leading: Icon(icon, color: const Color(0xFFC62828), size: 20),
         title:
             Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
         subtitle:
@@ -475,7 +551,7 @@ class _ProfileAction extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: Icon(icon, color: const Color(0xFF0077B6)),
+        leading: Icon(icon, color: const Color(0xFFC62828)),
         title: Text(label,
             style: const TextStyle(
                 fontWeight: FontWeight.w600, fontSize: 14)),

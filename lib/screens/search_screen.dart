@@ -1,66 +1,18 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../models/product_model.dart';
 import '../providers/cart_provider.dart';
+import '../providers/products_provider.dart';
 import 'product_detail_screen.dart';
 
-/// Master list of every product across both Drinks and Provisions.
-/// Used by SearchScreen and CategoryProductsScreen.
+/// Kept for backward compatibility with CategoryProductsScreen.
+/// Products are now managed exclusively through [ProductsProvider].
 class ProductCatalogue {
-  static const List<_Product> all = [
-    // ── Drinks ─────────────────────────────────────────────────────────────
-    _Product('beer_001', 'Club Beer (33cl)', 'drink', 8.00,
-        'A refreshing Ghanaian lager brewed with the finest barley and hops. Best served chilled.',
-        Icons.local_drink_rounded, Color(0xFFF4A261), 'Alcoholic'),
-    _Product('beer_002', 'Guinness (can)', 'drink', 10.00,
-        'The world-famous Irish stout with a rich, creamy head. Full-bodied and bold.',
-        Icons.local_bar_rounded, Color(0xFF212529), 'Alcoholic'),
-    _Product('wine_001', 'Red Wine (bottle)', 'drink', 55.00,
-        'A smooth, full-bodied red wine with notes of cherry, plum, and oak. Perfect with meat.',
-        Icons.wine_bar_rounded, Color(0xFF9D0208), 'Alcoholic'),
-    _Product('wine_002', 'White Wine (bottle)', 'drink', 52.00,
-        'A crisp, dry white wine with citrus and floral notes. Great with seafood and chicken.',
-        Icons.wine_bar_rounded, Color(0xFFD4A017), 'Alcoholic'),
-    _Product('soda_001', 'Coca-Cola (50cl)', 'drink', 6.00,
-        'The iconic cola beverage. Fizzy, sweet and refreshing. Best enjoyed ice-cold.',
-        Icons.emoji_food_beverage_rounded, Color(0xFFCC0000), 'Non-Alcoholic'),
-    _Product('soda_002', 'Fanta Orange (50cl)', 'drink', 5.50,
-        'Bright, bubbly orange-flavoured soft drink. A favourite for the whole family.',
-        Icons.emoji_food_beverage_rounded, Color(0xFFF4A261), 'Non-Alcoholic'),
-    _Product('water_001', 'Voltic Water (1L)', 'drink', 4.00,
-        'Premium Ghanaian natural mineral water. Pure, clean, and naturally refreshing.',
-        Icons.water_drop_rounded, Color(0xFF0096C7), 'Non-Alcoholic'),
-    _Product('water_002', 'Evian Water (500ml)', 'drink', 7.00,
-        'Naturally filtered French mineral water from the Alps. Light and pure taste.',
-        Icons.water_drop_rounded, Color(0xFF48CAE4), 'Non-Alcoholic'),
-
-    // ── Provisions ─────────────────────────────────────────────────────────
-    _Product('biscuit_001', 'Cabin Biscuits (pack)', 'provision', 12.00,
-        'Classic Ghanaian cabin biscuits – crispy, lightly sweetened. Great for snacking and travel.',
-        Icons.cookie_rounded, Color(0xFF52B788), 'Biscuits'),
-    _Product('biscuit_002', 'Digestive Biscuits', 'provision', 18.50,
-        'Whole wheat digestive biscuits with a mild sweetness. Perfect with tea or as a snack.',
-        Icons.cookie_rounded, Color(0xFFD4A017), 'Biscuits'),
-    _Product('recipe_001', 'Tomato Paste (tin)', 'provision', 5.00,
-        'Concentrated tomato paste made from sun-ripened tomatoes. Essential for Ghanaian soups and stews.',
-        Icons.rice_bowl_rounded, Color(0xFFE76F51), 'Cooking Ingredients'),
-    _Product('recipe_002', 'Vegetable Oil (2L)', 'provision', 35.00,
-        'Pure refined vegetable cooking oil. Ideal for frying, sautéing, and everyday cooking.',
-        Icons.opacity_rounded, Color(0xFFFFD60A), 'Cooking Ingredients'),
-    _Product('recipe_003', 'Basmati Rice (5kg)', 'provision', 95.00,
-        'Long-grain aromatic basmati rice. Fluffy, fragrant, and delicious with any stew.',
-        Icons.rice_bowl_rounded, Color(0xFF52B788), 'Cooking Ingredients'),
-    _Product('soap_001', 'Omo Detergent (1kg)', 'provision', 22.00,
-        'Powerful washing powder that removes tough stains in one wash. Fresh citrus scent.',
-        Icons.soap_rounded, Color(0xFF457B9D), 'Soap & Detergents'),
-    _Product('soap_002', 'Lux Bar Soap (3-pack)', 'provision', 14.00,
-        'Luxurious moisturising bar soap with natural ingredients. Leaves skin soft and smooth.',
-        Icons.soap_rounded, Color(0xFFE9C46A), 'Soap & Detergents'),
-    _Product('soap_003', 'Dettol Hand Soap', 'provision', 19.00,
-        'Antibacterial liquid hand soap that kills 99.9% of bacteria. Keeps your family protected.',
-        Icons.soap_rounded, Color(0xFF2D6A4F), 'Soap & Detergents'),
-  ];
+  // ignore: library_private_types_in_public_api
+  static const List<_Product> all = [];
 }
 
 class _Product {
@@ -79,7 +31,7 @@ class _Product {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Live search screen across all products.
+/// Live search screen across all admin-uploaded products.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -101,14 +53,14 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  List<_Product> get _results {
-    if (_query.isEmpty) return ProductCatalogue.all;
+  List<ProductModel> _filterResults(List<ProductModel> products) {
+    if (_query.isEmpty) return products;
     final q = _query.toLowerCase();
-    return ProductCatalogue.all
+    return products
         .where((p) =>
             p.name.toLowerCase().contains(q) ||
             p.category.toLowerCase().contains(q) ||
-            p.subcategory.toLowerCase().contains(q))
+            p.drinkType.toLowerCase().contains(q))
         .toList();
   }
 
@@ -120,10 +72,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final results = _results;
+    final allProducts =
+        context.watch<ProductsProvider>().products.toList();
+    final results = _filterResults(allProducts);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: TextField(
           controller: _controller,
@@ -146,7 +100,16 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           onChanged: (v) => setState(() => _query = v),
         ),
-        backgroundColor: const Color(0xFF0077B6),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7F0000), Color(0xFFC62828), Color(0xFFEF5350)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
@@ -165,7 +128,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: Color(0xFF023E8A),
+                          color: Color(0xFF7F0000),
                         ),
                       ),
                     ),
@@ -259,15 +222,35 @@ class _NoResults extends StatelessWidget {
   }
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+IconData _productIcon(ProductModel p) {
+  if (p.drinkType.toLowerCase().contains('alcohol')) {
+    return Icons.local_bar_rounded;
+  }
+  if (p.category == 'drink') return Icons.local_drink_rounded;
+  return Icons.shopping_bag_rounded;
+}
+
+Color _productColor(ProductModel p) {
+  if (p.drinkType.toLowerCase().contains('alcohol')) {
+    return const Color(0xFF9D0208);
+  }
+  if (p.category == 'drink') return const Color(0xFFF4A261);
+  return const Color(0xFF4CAF50);
+}
+
 // ── Search result tile ────────────────────────────────────────────────────────
 
 class _SearchResultTile extends StatelessWidget {
-  final _Product product;
+  final ProductModel product;
   const _SearchResultTile({required this.product});
 
   @override
   Widget build(BuildContext context) {
     final cart = context.read<CartProvider>();
+    final color = _productColor(product);
+    final icon = _productIcon(product);
 
     return Card(
       child: ListTile(
@@ -279,23 +262,20 @@ class _SearchResultTile extends StatelessWidget {
             name: product.name,
             category: product.category,
             price: product.price,
-            description: product.description,
-            icon: product.icon,
-            color: product.color,
+            description: '',
+            icon: icon,
+            color: color,
           ),
         ),
-        leading: CircleAvatar(
-          backgroundColor: product.color.withOpacity(0.15),
-          child: Icon(product.icon, color: product.color, size: 20),
-        ),
+        leading: _ProductImage(imageUrl: product.imageUrl, color: color, icon: icon),
         title: Text(product.name,
             style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(
-          '${product.subcategory} • GH₵ ${product.price.toStringAsFixed(2)}',
+          '${product.drinkType.isNotEmpty ? product.drinkType : product.category} • GH₵ ${product.price.toStringAsFixed(2)}',
           style: const TextStyle(fontSize: 12),
         ),
         trailing: IconButton(
-          icon: Icon(Icons.add_shopping_cart_rounded, color: product.color),
+          icon: Icon(Icons.add_shopping_cart_rounded, color: color),
           tooltip: 'Add to cart',
           onPressed: () {
             cart.addItem(
@@ -308,13 +288,92 @@ class _SearchResultTile extends StatelessWidget {
               ..hideCurrentSnackBar()
               ..showSnackBar(SnackBar(
                 content: Text('${product.name} added!'),
-                backgroundColor: product.color,
+                backgroundColor: color,
                 behavior: SnackBarBehavior.floating,
                 duration: const Duration(seconds: 2),
               ));
           },
         ),
       ),
+    );
+  }
+}
+
+// ── Product image widget ──────────────────────────────────────────────────────
+
+class _ProductImage extends StatelessWidget {
+  final String imageUrl;
+  final Color color;
+  final IconData icon;
+  const _ProductImage(
+      {required this.imageUrl, required this.color, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl.isEmpty) return _placeholder();
+
+    // For base64 data URLs, decode and use Image.memory
+    if (imageUrl.startsWith('data:')) {
+      try {
+        final comma = imageUrl.indexOf(',');
+        if (comma == -1) return _placeholder();
+        final base64Str = imageUrl.substring(comma + 1).trim();
+        final bytes = base64Decode(base64Str);
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.memory(
+            bytes,
+            width: 50,
+            height: 50,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _placeholder(),
+          ),
+        );
+      } catch (_) {
+        return _placeholder();
+      }
+    }
+
+    // Network URLs
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Image.network(
+        imageUrl,
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _placeholder(),
+        loadingBuilder: (_, child, progress) => progress == null
+            ? child
+            : Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: color),
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _placeholder() {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, color: color, size: 22),
     );
   }
 }

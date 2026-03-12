@@ -61,8 +61,16 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF003557),
-      body: Center(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF2D0000), Color(0xFF990000), Color(0xFFC62828)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(28),
           child: Column(
@@ -72,7 +80,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 width: 90,
                 height: 90,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
+                  color: Colors.white.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.admin_panel_settings_rounded,
@@ -92,7 +100,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               Text(
                 'Drink & Provision Hub',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.65),
+                  color: Colors.white.withValues(alpha: 0.65),
                   fontSize: 14,
                 ),
               ),
@@ -115,7 +123,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF003557),
+                            color: Color(0xFF990000),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -127,7 +135,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           decoration: InputDecoration(
                             labelText: 'Admin Email',
                             prefixIcon: const Icon(Icons.email_outlined,
-                                color: Color(0xFF0077B6)),
+                                color: Color(0xFFC62828)),
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12)),
                           ),
@@ -150,7 +158,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           decoration: InputDecoration(
                             labelText: 'Password',
                             prefixIcon: const Icon(Icons.lock_outline,
-                                color: Color(0xFF0077B6)),
+                                color: Color(0xFFC62828)),
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12)),
                             suffixIcon: IconButton(
@@ -217,7 +225,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                   fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF003557),
+                              backgroundColor: const Color(0xFF990000),
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),
@@ -244,6 +252,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

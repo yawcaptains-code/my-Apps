@@ -2,15 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:provider/provider.dart';
-import 'package:shimmer/shimmer.dart';
-
 import '../providers/cart_provider.dart';
 import '../providers/products_provider.dart';
 import '../providers/carousel_provider.dart';
 import '../providers/categories_provider.dart';
 import '../models/product_model.dart';
 import '../widgets/cart_icon_badge.dart';
-import 'product_detail_screen.dart';
 import 'category_products_screen.dart';
 
 /// The main screen for browsing and adding drinks to the cart.
@@ -22,39 +19,16 @@ class DrinksScreen extends StatefulWidget {
 }
 
 class _DrinksScreenState extends State<DrinksScreen> {
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    // Simulate a brief network/data-load before revealing the product grid.
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) setState(() => _isLoading = false);
-    });
-  }
-
   // ── Promotional banner data ───────────────────────────────────────────────
   static const List<_BannerData> _banners = [
-    _BannerData('☀️  Summer Drinks', Color(0xFF0096C7)),
-    _BannerData('🆕  New Arrivals', Color(0xFF023E8A)),
+    _BannerData('☀️  Summer Drinks', Color(0xFFEF5350)),
+    _BannerData('🆕  New Arrivals', Color(0xFF7F0000)),
     _BannerData('🍺  Beer Promos', Color(0xFFF4A261)),
-    _BannerData('🥤  Soft Drinks Sale', Color(0xFF2EC4B6)),
+    _BannerData('🥤  Soft Drinks Sale', Color(0xFFEF9A9A)),
     _BannerData('🍷  Wine Collection', Color(0xFF9D0208)),
   ];
 
-  // ── Sample drink products ─────────────────────────────────────────────────
-  static const List<_ProductData> _drinks = [
-    _ProductData('beer_001', 'Club Beer (33cl)', 'drink', 8.00, Icons.local_drink_rounded, Color(0xFFF4A261)),
-    _ProductData('beer_002', 'Guinness (can)', 'drink', 10.00, Icons.local_bar_rounded, Color(0xFF212529)),
-    _ProductData('wine_001', 'Red Wine (bottle)', 'drink', 55.00, Icons.wine_bar_rounded, Color(0xFF9D0208)),
-    _ProductData('wine_002', 'White Wine (bottle)', 'drink', 52.00, Icons.wine_bar_rounded, Color(0xFFD4A017)),
-    _ProductData('soda_001', 'Coca-Cola (50cl)', 'drink', 6.00, Icons.emoji_food_beverage_rounded, Color(0xFFCC0000)),
-    _ProductData('soda_002', 'Fanta Orange (50cl)', 'drink', 5.50, Icons.emoji_food_beverage_rounded, Color(0xFFF4A261)),
-    _ProductData('water_001', 'Voltic Water (1L)', 'drink', 4.00, Icons.water_drop_rounded, Color(0xFF0096C7)),
-    _ProductData('water_002', 'Evian Water (500ml)', 'drink', 7.00, Icons.water_drop_rounded, Color(0xFF48CAE4)),
-  ];
-
-  void _goToCategory(BuildContext context, String subcategory, String title, Color color, IconData icon) {
+  void _goToCategory(BuildContext context, String subcategory, String title, Color color, IconData icon, {String categoryId = ''}) {
     Navigator.pushNamed(
       context,
       '/category-products',
@@ -63,6 +37,7 @@ class _DrinksScreenState extends State<DrinksScreen> {
         title: title,
         color: color,
         icon: icon,
+        categoryId: categoryId,
       ),
     );
   }
@@ -70,10 +45,18 @@ class _DrinksScreenState extends State<DrinksScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F8FF),
       appBar: AppBar(
         title: const Text('Drink Shop'),
-        backgroundColor: const Color(0xFF0077B6),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7F0000), Color(0xFFC62828), Color(0xFFEF5350)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         actions: const [CartIconBadge()],
       ),
       body: SingleChildScrollView(
@@ -111,7 +94,8 @@ class _DrinksScreenState extends State<DrinksScreen> {
                                 c.name,
                                 c.name,
                                 c.color,
-                                Icons.local_bar_rounded),
+                                Icons.local_bar_rounded,
+                                categoryId: c.id),
                           ))
                       .toList(),
                 );
@@ -120,52 +104,71 @@ class _DrinksScreenState extends State<DrinksScreen> {
 
             const SizedBox(height: 20),
 
-            // ── Section: Featured products ──────────────────────────────────
-            const _SectionHeader(title: 'Featured Products'),
-            _isLoading
-                ? const _ShimmerProductGrid()
-                : GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 4),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.82,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemCount: _drinks.length,
-                    itemBuilder: (ctx, i) =>
-                        _ProductCard(product: _drinks[i]),
-                  ),
-
-            // ── Admin uploaded drinks ───────────────────────────────────────
-            Consumer<ProductsProvider>(
-              builder: (_, provider, __) {
-                final adminDrinks = provider.drinks;
+            // ── Admin drinks grouped by category ────────────────────────────
+            Consumer2<ProductsProvider, CategoriesProvider>(
+              builder: (_, productsProvider, catsProvider, __) {
+                final adminDrinks = productsProvider.drinks;
                 if (adminDrinks.isEmpty) return const SizedBox.shrink();
+                final cats = catsProvider.drinkCategories;
+                // Products not yet assigned to any known category
+                final uncategorised = adminDrinks
+                    .where((p) => cats.every((c) => c.id != p.drinkType))
+                    .toList();
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _SectionHeader(title: '🆕  New Arrivals'),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.82,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
+                    // Per-category sections
+                    for (final cat in cats) ...[
+                      Builder(builder: (ctx) {
+                        final catProducts = adminDrinks
+                            .where((p) => p.drinkType == cat.id)
+                            .toList();
+                        if (catProducts.isEmpty) return const SizedBox.shrink();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _SectionHeader(
+                                title: '${cat.emoji}  ${cat.name}'),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 4),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 0.82,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
+                              itemCount: catProducts.length,
+                              itemBuilder: (ctx2, i) =>
+                                  _AdminProductCard(product: catProducts[i]),
+                            ),
+                          ],
+                        );
+                      }),
+                    ],
+                    // Uncategorised fallback
+                    if (uncategorised.isNotEmpty) ...[
+                      const _SectionHeader(title: '🆕  New Arrivals'),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.82,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: uncategorised.length,
+                        itemBuilder: (ctx, i) =>
+                            _AdminProductCard(product: uncategorised[i]),
                       ),
-                      itemCount: adminDrinks.length,
-                      itemBuilder: (ctx, i) =>
-                          _AdminProductCard(product: adminDrinks[i]),
-                    ),
+                    ],
                   ],
                 );
               },
@@ -246,7 +249,7 @@ class _AdminImageCarousel extends StatelessWidget {
               fit: BoxFit.cover, width: double.infinity);
         } catch (_) {
           img = Container(
-              color: const Color(0xFF0077B6),
+              color: const Color(0xFFC62828),
               child: const Center(
                   child: Icon(Icons.broken_image_outlined,
                       color: Colors.white, size: 40)));
@@ -275,7 +278,7 @@ class _SectionHeader extends StatelessWidget {
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF023E8A),
+          color: Color(0xFF7F0000),
         ),
       ),
     );
@@ -304,7 +307,7 @@ class _CategoryCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Material(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -333,7 +336,7 @@ class _CategoryCard extends StatelessWidget {
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: color.withOpacity(0.9),
+                color: color.withValues(alpha: 0.9),
                 fontSize: 16,
               ),
             ),
@@ -345,181 +348,6 @@ class _CategoryCard extends StatelessWidget {
   }
 }
 
-// ── Product Card ──────────────────────────────────────────────────────────────
-
-class _ProductCard extends StatelessWidget {
-  final _ProductData product;
-  const _ProductCard({required this.product});
-
-  @override
-  Widget build(BuildContext context) {
-    final cart = context.read<CartProvider>();
-
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.pushNamed(
-          context,
-          '/product-detail',
-          arguments: ProductDetailArgs(
-            id: product.id,
-            name: product.name,
-            category: product.category,
-            price: product.price,
-            description: _description(product.id),
-            icon: product.icon,
-            color: product.color,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Center(
-                  child: Icon(
-                    product.icon,
-                    size: 54,
-                    color: product.color.withOpacity(0.8),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 8),
-            Text(
-              product.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'GH₵ ${product.price.toStringAsFixed(2)}',
-              style: const TextStyle(
-                color: Color(0xFF0077B6),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  cart.addItem(
-                    id: product.id,
-                    name: product.name,
-                    category: product.category,
-                    price: product.price,
-                  );
-                  ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(
-                      SnackBar(
-                        content: Text('${product.name} added to cart!'),
-                        backgroundColor: product.color,
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                },
-                icon: const Icon(Icons.add_shopping_cart, size: 16),
-                label: const Text('Add', style: TextStyle(fontSize: 13)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: product.color,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ));
-  }
-
-  String _description(String id) {
-    const map = {
-      'beer_001': 'A refreshing Ghanaian lager brewed with the finest barley and hops. Best served chilled.',
-      'beer_002': 'The world-famous Irish stout with a rich, creamy head. Full-bodied and bold.',
-      'wine_001': 'A smooth, full-bodied red wine with notes of cherry, plum, and oak. Perfect with meat.',
-      'wine_002': 'A crisp, dry white wine with citrus and floral notes. Great with seafood and chicken.',
-      'soda_001': 'The iconic cola beverage. Fizzy, sweet and refreshing. Best enjoyed ice-cold.',
-      'soda_002': 'Bright, bubbly orange-flavoured soft drink. A favourite for the whole family.',
-      'water_001': 'Premium Ghanaian natural mineral water. Pure, clean, and naturally refreshing.',
-      'water_002': 'Naturally filtered French mineral water from the Alps. Light and pure taste.',
-    };
-    return map[id] ?? 'Premium quality product. Tap to learn more.';
-  }
-}
-
-// ── Shimmer Loading Grid ──────────────────────────────────────────────────────
-
-class _ShimmerProductGrid extends StatelessWidget {
-  const _ShimmerProductGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.82,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemCount: 6,
-        itemBuilder: (_, __) => Shimmer.fromColors(
-          baseColor: Colors.grey.shade300,
-          highlightColor: Colors.grey.shade100,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(height: 12, width: double.infinity, color: Colors.white),
-                  const SizedBox(height: 6),
-                  Container(height: 12, width: 80, color: Colors.white),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 36,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ── Data holder classes (const for efficiency) ───────────────────────────────
 
@@ -529,15 +357,6 @@ class _BannerData {
   const _BannerData(this.label, this.color);
 }
 
-class _ProductData {
-  final String id;
-  final String name;
-  final String category;
-  final double price;
-  final IconData icon;
-  final Color color;
-  const _ProductData(this.id, this.name, this.category, this.price, this.icon, this.color);
-}
 
 // ── Admin Product Card ───────────────────────────────────────────────
 
@@ -580,7 +399,7 @@ class _AdminProductCard extends StatelessWidget {
                 Text(
                   'GH₵ ${product.price.toStringAsFixed(2)}',
                   style: const TextStyle(
-                      color: Color(0xFF0077B6),
+                      color: Color(0xFFC62828),
                       fontWeight: FontWeight.bold,
                       fontSize: 13),
                 ),
@@ -591,6 +410,7 @@ class _AdminProductCard extends StatelessWidget {
                       name: product.name,
                       price: product.price,
                       category: product.category,
+                      imageUrl: product.imageUrl,
                     );
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -598,14 +418,14 @@ class _AdminProductCard extends StatelessWidget {
                             Text('✅  ${product.name} added to cart'),
                         duration: const Duration(seconds: 2),
                         behavior: SnackBarBehavior.floating,
-                        backgroundColor: const Color(0xFF0077B6),
+                        backgroundColor: const Color(0xFFC62828),
                       ),
                     );
                   },
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0077B6),
+                      color: const Color(0xFFC62828),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.add_shopping_cart_rounded,
@@ -641,10 +461,10 @@ class _AdminProductCard extends StatelessWidget {
 
   Widget _placeholder() {
     return Container(
-      color: const Color(0xFF0077B6).withOpacity(0.08),
+      color: const Color(0xFFC62828).withValues(alpha: 0.08),
       child: const Center(
         child: Icon(Icons.local_bar_rounded,
-            color: Color(0xFF0077B6), size: 36),
+            color: Color(0xFFC62828), size: 36),
       ),
     );
   }

@@ -2,15 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:provider/provider.dart';
-import 'package:shimmer/shimmer.dart';
-
 import '../providers/cart_provider.dart';
 import '../providers/products_provider.dart';
 import '../providers/carousel_provider.dart';
 import '../providers/categories_provider.dart';
 import '../models/product_model.dart';
 import '../widgets/cart_icon_badge.dart';
-import 'product_detail_screen.dart';
 import 'category_products_screen.dart';
 
 /// The main screen for browsing and adding provisions/groceries to the cart.
@@ -22,42 +19,16 @@ class ProvisionsScreen extends StatefulWidget {
 }
 
 class _ProvisionsScreenState extends State<ProvisionsScreen> {
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    // Simulate a brief network/data-load before revealing the product grid.
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) setState(() => _isLoading = false);
-    });
-  }
-
   // ── Promotional banners ───────────────────────────────────────────────────
   static const List<_BannerData> _banners = [
-    _BannerData('🍪  Bulk Biscuits Deal', Color(0xFF52B788)),
+    _BannerData('🍪  Bulk Biscuits Deal', Color(0xFFEF5350)),
     _BannerData('🍳  Kitchen Essentials', Color(0xFFE76F51)),
-    _BannerData('🧼  Soap & Detergents', Color(0xFF457B9D)),
-    _BannerData('🛒  Weekly Grocery Pack', Color(0xFF2D6A4F)),
+    _BannerData('🧼  Soap & Detergents', Color(0xFFE57373)),
+    _BannerData('🛒  Weekly Grocery Pack', Color(0xFFC62828)),
     _BannerData('🏷️  Member-Only Prices', Color(0xFFD4A017)),
   ];
 
-  // ── Sample provision products ─────────────────────────────────────────────
-  static const List<_ProductData> _products = [
-    _ProductData('biscuit_001', 'Cabin Biscuits (pack)', 'provision', 12.00, Icons.cookie_rounded, Color(0xFF52B788)),
-    _ProductData('biscuit_002', 'Digestive Biscuits', 'provision', 18.50, Icons.cookie_rounded, Color(0xFFD4A017)),
-    _ProductData('recipe_001', 'Tomato Paste (tin)', 'provision', 5.00, Icons.rice_bowl_rounded, Color(0xFFE76F51)),
-    _ProductData('recipe_002', 'Vegetable Oil (2L)', 'provision', 35.00, Icons.opacity_rounded, Color(0xFFFFD60A)),
-    _ProductData('recipe_003', 'Basmati Rice (5kg)', 'provision', 95.00, Icons.rice_bowl_rounded, Color(0xFF52B788)),
-    _ProductData('soap_001', 'Omo Detergent (1kg)', 'provision', 22.00, Icons.soap_rounded, Color(0xFF457B9D)),
-    _ProductData('soap_002', 'Lux Bar Soap (3-pack)', 'provision', 14.00, Icons.soap_rounded, Color(0xFFE9C46A)),
-    _ProductData('soap_003', 'Dettol Hand Soap', 'provision', 19.00, Icons.soap_rounded, Color(0xFF2D6A4F)),
-  ];
-
-  // ── Categories ────────────────────────────────────────────────────────────
-  // Now loaded from CategoriesProvider (editable via admin)
-
-  void _goToCategory(BuildContext context, String subcategory, String title, Color color, IconData icon) {
+  void _goToCategory(BuildContext context, String subcategory, String title, Color color, IconData icon, {String categoryId = ''}) {
     Navigator.pushNamed(
       context,
       '/category-products',
@@ -66,6 +37,7 @@ class _ProvisionsScreenState extends State<ProvisionsScreen> {
         title: title,
         color: color,
         icon: icon,
+        categoryId: categoryId,
       ),
     );
   }
@@ -73,10 +45,18 @@ class _ProvisionsScreenState extends State<ProvisionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0FFF4),
       appBar: AppBar(
         title: const Text('Provision Shop'),
-        backgroundColor: const Color(0xFF2D6A4F),
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7F0000), Color(0xFFC62828), Color(0xFFEF5350)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         actions: const [CartIconBadge()],
       ),
       body: SingleChildScrollView(
@@ -98,7 +78,7 @@ class _ProvisionsScreenState extends State<ProvisionsScreen> {
             const SizedBox(height: 20),
 
             // ── Categories ──────────────────────────────────────────────────
-            const _SectionHeader(title: 'Browse by Category', color: Color(0xFF2D6A4F)),
+            const _SectionHeader(title: 'Browse by Category', color: Color(0xFFC62828)),
             Consumer<CategoriesProvider>(
               builder: (_, cp, __) {
                 final cats = cp.provisionCategories;
@@ -111,7 +91,8 @@ class _ProvisionsScreenState extends State<ProvisionsScreen> {
                             imageDataUri: c.imageDataUri,
                             onTap: () => _goToCategory(
                                 context, c.name, c.name, c.color,
-                                Icons.shopping_basket_rounded),
+                                Icons.shopping_basket_rounded,
+                                categoryId: c.id),
                           ))
                       .toList(),
                 );
@@ -120,54 +101,73 @@ class _ProvisionsScreenState extends State<ProvisionsScreen> {
 
             const SizedBox(height: 20),
 
-            // ── Featured Products ───────────────────────────────────────────
-            const _SectionHeader(title: 'Featured Products', color: Color(0xFF2D6A4F)),
-            _isLoading
-                ? const _ShimmerProductGrid()
-                : GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 4),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.80,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemCount: _products.length,
-                    itemBuilder: (ctx, i) =>
-                        _ProductCard(product: _products[i]),
-                  ),
-
-            // ── Admin uploaded provisions ───────────────────────────────────
-            Consumer<ProductsProvider>(
-              builder: (_, provider, __) {
-                final adminProvisions = provider.provisions;
+            // ── Admin provisions grouped by category ────────────────────────
+            Consumer2<ProductsProvider, CategoriesProvider>(
+              builder: (_, productsProvider, catsProvider, __) {
+                final adminProvisions = productsProvider.provisions;
                 if (adminProvisions.isEmpty) return const SizedBox.shrink();
+                final cats = catsProvider.provisionCategories;
+                final uncategorised = adminProvisions
+                    .where((p) => cats.every((c) => c.id != p.drinkType))
+                    .toList();
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _SectionHeader(
-                        title: '🆕  New Stock',
-                        color: Color(0xFF2D6A4F)),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.80,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
+                    // Per-category sections
+                    for (final cat in cats) ...[
+                      Builder(builder: (ctx) {
+                        final catProducts = adminProvisions
+                            .where((p) => p.drinkType == cat.id)
+                            .toList();
+                        if (catProducts.isEmpty) return const SizedBox.shrink();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _SectionHeader(
+                                title: '${cat.emoji}  ${cat.name}',
+                                color: const Color(0xFFC62828)),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 4),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 0.80,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
+                              itemCount: catProducts.length,
+                              itemBuilder: (ctx2, i) =>
+                                  _AdminProductCard(product: catProducts[i]),
+                            ),
+                          ],
+                        );
+                      }),
+                    ],
+                    // Uncategorised fallback
+                    if (uncategorised.isNotEmpty) ...[
+                      const _SectionHeader(
+                          title: '🆕  New Stock',
+                          color: Color(0xFFC62828)),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.80,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: uncategorised.length,
+                        itemBuilder: (ctx, i) =>
+                            _AdminProductCard(product: uncategorised[i]),
                       ),
-                      itemCount: adminProvisions.length,
-                      itemBuilder: (ctx, i) =>
-                          _AdminProductCard(product: adminProvisions[i]),
-                    ),
+                    ],
                   ],
                 );
               },
@@ -247,7 +247,7 @@ class _AdminImageCarousel extends StatelessWidget {
               fit: BoxFit.cover, width: double.infinity);
         } catch (_) {
           img = Container(
-              color: const Color(0xFF2D6A4F),
+              color: const Color(0xFFC62828),
               child: const Center(
                   child: Icon(Icons.broken_image_outlined,
                       color: Colors.white, size: 40)));
@@ -306,7 +306,7 @@ class _CategoryCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Material(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -347,178 +347,6 @@ class _CategoryCard extends StatelessWidget {
   }
 }
 
-// ── Product Card ──────────────────────────────────────────────────────────────
-
-class _ProductCard extends StatelessWidget {
-  final _ProductData product;
-  const _ProductCard({required this.product});
-
-  @override
-  Widget build(BuildContext context) {
-    final cart = context.read<CartProvider>();
-
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.pushNamed(
-          context,
-          '/product-detail',
-          arguments: ProductDetailArgs(
-            id: product.id,
-            name: product.name,
-            category: product.category,
-            price: product.price,
-            description: _description(product.id),
-            icon: product.icon,
-            color: product.color,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Center(
-                  child: Icon(
-                    product.icon,
-                    size: 54,
-                    color: product.color.withOpacity(0.8),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 8),
-            Text(
-              product.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'GH₵ ${product.price.toStringAsFixed(2)}',
-              style: const TextStyle(
-                color: Color(0xFF2D6A4F),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  cart.addItem(
-                    id: product.id,
-                    name: product.name,
-                    category: product.category,
-                    price: product.price,
-                  );
-                  ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(SnackBar(
-                      content: Text('${product.name} added to cart!'),
-                      backgroundColor: product.color,
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 2),
-                    ));
-                },
-                icon: const Icon(Icons.add_shopping_cart, size: 16),
-                label: const Text('Add', style: TextStyle(fontSize: 13)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: product.color,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ));
-  }
-
-  String _description(String id) {
-    const map = {
-      'biscuit_001': 'Classic Ghanaian cabin biscuits – crispy, lightly sweetened. Great for snacking and travel.',
-      'biscuit_002': 'Whole wheat digestive biscuits with a mild sweetness. Perfect with tea or as a snack.',
-      'recipe_001': 'Concentrated tomato paste made from sun-ripened tomatoes. Essential for Ghanaian soups and stews.',
-      'recipe_002': 'Pure refined vegetable cooking oil. Ideal for frying, sauéing, and everyday cooking.',
-      'recipe_003': 'Long-grain aromatic basmati rice. Fluffy, fragrant, and delicious with any stew.',
-      'soap_001': 'Powerful washing powder that removes tough stains in one wash. Fresh citrus scent.',
-      'soap_002': 'Luxurious moisturising bar soap with natural ingredients. Leaves skin soft and smooth.',
-      'soap_003': 'Antibacterial liquid hand soap that kills 99.9% of bacteria. Keeps your family protected.',
-    };
-    return map[id] ?? 'Premium quality product. Tap to learn more.';
-  }
-}
-// ── Shimmer Loading Grid ──────────────────────────────────────────────────────
-
-class _ShimmerProductGrid extends StatelessWidget {
-  const _ShimmerProductGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.80,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemCount: 6,
-        itemBuilder: (_, __) => Shimmer.fromColors(
-          baseColor: Colors.grey.shade300,
-          highlightColor: Colors.grey.shade100,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(height: 12, width: double.infinity, color: Colors.white),
-                  const SizedBox(height: 6),
-                  Container(height: 12, width: 80, color: Colors.white),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 36,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 // ── Data holder classes ───────────────────────────────────────────────────────
 
 class _BannerData {
@@ -527,15 +355,6 @@ class _BannerData {
   const _BannerData(this.label, this.color);
 }
 
-class _ProductData {
-  final String id;
-  final String name;
-  final String category;
-  final double price;
-  final IconData icon;
-  final Color color;
-  const _ProductData(this.id, this.name, this.category, this.price, this.icon, this.color);
-}
 
 // ── Admin Product Card ───────────────────────────────────────────────
 
@@ -577,7 +396,7 @@ class _AdminProductCard extends StatelessWidget {
                 Text(
                   'GH₵ ${product.price.toStringAsFixed(2)}',
                   style: const TextStyle(
-                      color: Color(0xFF2D6A4F),
+                      color: Color(0xFFC62828),
                       fontWeight: FontWeight.bold,
                       fontSize: 13),
                 ),
@@ -588,6 +407,7 @@ class _AdminProductCard extends StatelessWidget {
                       name: product.name,
                       price: product.price,
                       category: product.category,
+                      imageUrl: product.imageUrl,
                     );
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -595,14 +415,14 @@ class _AdminProductCard extends StatelessWidget {
                             Text('✅  ${product.name} added to cart'),
                         duration: const Duration(seconds: 2),
                         behavior: SnackBarBehavior.floating,
-                        backgroundColor: const Color(0xFF2D6A4F),
+                        backgroundColor: const Color(0xFFC62828),
                       ),
                     );
                   },
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2D6A4F),
+                      color: const Color(0xFFC62828),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.add_shopping_cart_rounded,
@@ -638,10 +458,10 @@ class _AdminProductCard extends StatelessWidget {
 
   Widget _placeholder() {
     return Container(
-      color: const Color(0xFF2D6A4F).withOpacity(0.08),
+      color: const Color(0xFFC62828).withValues(alpha: 0.08),
       child: const Center(
         child: Icon(Icons.shopping_basket_rounded,
-            color: Color(0xFF2D6A4F), size: 36),
+            color: Color(0xFFC62828), size: 36),
       ),
     );
   }
