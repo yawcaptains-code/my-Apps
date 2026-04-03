@@ -1,7 +1,7 @@
 [build]
+  base = "."
   command = "bash scripts/netlify-build.sh"
   publish = "build/web"
-  functions = "functions"
 
 [build.environment]
   FLUTTER_CHANNEL = "stable"
