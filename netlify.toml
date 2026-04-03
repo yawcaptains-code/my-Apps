@@ -1,8 +1,28 @@
 [build]
   command = "bash scripts/netlify-build.sh"
   publish = "build/web"
+  functions = "functions"
+
+[build.environment]
+  FLUTTER_CHANNEL = "stable"
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/main.dart.js"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
