@@ -24,7 +24,7 @@ echo "Getting dependencies..."
 flutter pub get || { echo "Failed to get pub dependencies"; exit 1; }
 
 echo "Building web app..."
-flutter build web --release --web-renderer html || { echo "Build failed"; exit 1; }
+flutter build web --release || { echo "Build failed"; exit 1; }
 
 echo "Build complete. Checking output directory..."
 ls -la build/web/ || { echo "build/web directory not found"; exit 1; }
