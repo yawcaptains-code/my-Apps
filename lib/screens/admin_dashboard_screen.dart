@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../providers/auth_provider.dart';
+
 import '../providers/orders_provider.dart';
 import '../providers/products_provider.dart';
 import '../providers/carousel_provider.dart';
@@ -59,8 +61,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setBool('is_admin', false);
+              await context.read<AuthProvider>().signOutAdmin();
               if (!mounted) return;
               Navigator.pop(context);
               Navigator.pushNamedAndRemoveUntil(

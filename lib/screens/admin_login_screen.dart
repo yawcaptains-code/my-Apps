@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+
+import '../config/security_config.dart';
+import '../providers/auth_provider.dart';
 
 /// Admin Login Screen
-/// Credentials: Abmin@2026.com / MKT@2026#heavenminded
+/// Admin access is configured through the ADMIN_ACCESS_CODE build define.
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
 
@@ -17,10 +20,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   String? _errorMessage;
-
-  // ── Hardcoded admin credentials ──────────────────────────────────────────
-  static const _adminEmail = 'Abmin@2026.com';
-  static const _adminPassword = 'MKT@2026#heavenminded';
 
   @override
   void dispose() {
@@ -39,21 +38,25 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
 
-    final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (email.toLowerCase() == _adminEmail.toLowerCase() &&
-        password == _adminPassword) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('is_admin', true);
-      await prefs.setString('profile_email', _adminEmail);
+    if (adminAccessCode.isEmpty) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Admin access is not configured for this build.';
+      });
+      return;
+    }
+
+    if (password == adminAccessCode) {
+      await context.read<AuthProvider>().signInAdmin();
       if (!mounted) return;
       Navigator.pushNamedAndRemoveUntil(
           context, '/admin-dashboard', (route) => false);
     } else {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Invalid admin credentials. Please try again.';
+        _errorMessage = 'Invalid admin access code. Please try again.';
       });
     }
   }
@@ -133,18 +136,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
-                            labelText: 'Admin Email',
-                            prefixIcon: const Icon(Icons.email_outlined,
+                            labelText: 'Admin Username',
+                            prefixIcon: const Icon(Icons.person_outline,
                                 color: Color(0xFFC62828)),
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12)),
                           ),
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) {
-                              return 'Please enter your email.';
-                            }
-                            if (!v.contains('@')) {
-                              return 'Enter a valid email address.';
+                              return 'Please enter your admin username.';
                             }
                             return null;
                           },

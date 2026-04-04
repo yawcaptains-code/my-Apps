@@ -8,6 +8,7 @@ import 'providers/carousel_provider.dart';
 import 'providers/categories_provider.dart';
 import 'providers/contact_info_provider.dart';
 import 'providers/home_shop_provider.dart';
+import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -29,6 +30,7 @@ import 'screens/admin_page5_screen.dart';
 import 'screens/admin_page6_screen.dart';
 import 'screens/admin_page7_screen.dart';
 import 'screens/carousel_preview_screen.dart';
+import 'widgets/admin_route_gate.dart';
 
 void main() {
   runApp(
@@ -41,6 +43,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => CarouselProvider()),
         ChangeNotifierProvider(create: (_) => ContactInfoProvider()),
         ChangeNotifierProvider(create: (_) => HomeShopProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: const DrinkProvisionApp(),
@@ -168,17 +171,23 @@ class DrinkProvisionApp extends StatelessWidget {
         '/category-products': (ctx) => const CategoryProductsScreen(),
         '/chat': (ctx) => const ChatScreen(),
         '/admin-login': (ctx) => const AdminLoginScreen(),
-        '/admin-dashboard': (ctx) => const AdminDashboardScreen(),
-        '/admin-page2': (ctx) => const AdminPage2Screen(),
+        '/admin-dashboard': (ctx) =>
+          const AdminRouteGate(child: AdminDashboardScreen()),
+        '/admin-page2': (ctx) =>
+          const AdminRouteGate(child: AdminPage2Screen()),
         '/admin-page3': (ctx) {
           final tab =
               (ModalRoute.of(ctx)?.settings.arguments as int?) ?? 0;
-          return AdminPage3Screen(initialTab: tab);
+          return AdminRouteGate(child: AdminPage3Screen(initialTab: tab));
         },
-        '/admin-page4': (ctx) => const AdminPage4Screen(),
-        '/admin-page5': (ctx) => const AdminPage5Screen(),
-        '/admin-page6': (ctx) => const AdminPage6Screen(),
-        '/admin-page7': (ctx) => const AdminPage7Screen(),
+        '/admin-page4': (ctx) =>
+          const AdminRouteGate(child: AdminPage4Screen()),
+        '/admin-page5': (ctx) =>
+          const AdminRouteGate(child: AdminPage5Screen()),
+        '/admin-page6': (ctx) =>
+          const AdminRouteGate(child: AdminPage6Screen()),
+        '/admin-page7': (ctx) =>
+          const AdminRouteGate(child: AdminPage7Screen()),
         '/carousel-preview': (ctx) => const CarouselPreviewScreen(),
       },
     );

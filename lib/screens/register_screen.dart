@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/password_hasher.dart';
+
 /// Simple customer registration screen.
 ///
 /// On success, saves name/phone/email to SharedPreferences so
@@ -66,27 +68,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    // ── Admin credentials check ────────────────────────────────────────────
-    const adminEmail = 'Abmin@2026.com';
-    const adminPassword = 'MKT@2026#heavenminded';
-    if (email.toLowerCase() == adminEmail.toLowerCase() &&
-        password == adminPassword) {
-      await prefs.setBool('is_admin', true);
-      await prefs.setString('profile_email', adminEmail);
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      Navigator.pushNamedAndRemoveUntil(
-          context, '/admin-dashboard', (route) => false);
-      return;
-    }
-    // ───────────────────────────────────────────────────────────────────────────
-
     await prefs.setString('profile_name', _nameController.text.trim());
     await prefs.setString('profile_phone', _phoneController.text.trim());
     if (email.isNotEmpty) {
       await prefs.setString('profile_email', email);
     }
-    await prefs.setString('profile_password', password);
+    final salt = PasswordHasher.generateSalt();
+    final hash = PasswordHasher.hashPassword(password: password, salt: salt);
+    await prefs.setString('profile_password_hash', hash);
+    await prefs.setString('profile_password_salt', salt);
+    await prefs.remove('profile_password');
     if (_avatar.isNotEmpty) {
       await prefs.setString('profile_avatar', _avatar);
     }

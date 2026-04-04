@@ -19,6 +19,17 @@ When Netlify builds directly from GitHub, Flutter is not preinstalled in the bui
    - Publish directory: `build/web`
 5. Click **Deploy site**.
 
+## Admin access configuration
+
+The admin login screen now uses a build-time secret instead of hardcoded
+credentials.
+
+Set this environment variable in Netlify before deploying:
+
+- `ADMIN_ACCESS_CODE` - the admin access code used by the admin login screen
+
+If this variable is missing, admin login will be disabled in that build.
+
 ## SPA route support
 
 `netlify.toml` includes a redirect rule so all routes are served through `index.html`, which is needed for Flutter web routing.

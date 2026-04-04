@@ -23,3 +23,4 @@ This repository includes Netlify deployment configuration for Flutter Web.
 - See [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md) for step-by-step setup.
 - Netlify build config: [netlify.toml](netlify.toml)
 - Build script used by Netlify: [scripts/netlify-build.sh](scripts/netlify-build.sh)
+- Admin login requires the `ADMIN_ACCESS_CODE` build-time environment variable.

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/orders_provider.dart';
 import '../providers/products_provider.dart';
@@ -42,6 +43,7 @@ class _SplashScreenState extends State<SplashScreen>
     // Load persisted data in parallel
     final results = await Future.wait([
       SharedPreferences.getInstance(),
+      context.read<AuthProvider>().restoreUserSession(),
       context.read<CartProvider>().loadFromPrefs(),
       context.read<OrdersProvider>().loadFromPrefs(),
       context.read<ProductsProvider>().loadFromPrefs(),

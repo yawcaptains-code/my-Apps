@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../providers/auth_provider.dart';
+import '../services/password_hasher.dart';
 
 /// Login screen.
 ///
@@ -38,29 +42,26 @@ class _LoginScreenState extends State<LoginScreen> {
     final enteredPassword = _passwordController.text;
     final prefs = await SharedPreferences.getInstance();
 
-    // ── Admin credentials check ──────────────────────────────────────────────
-    const adminEmail = 'Abmin@2026.com';
-    const adminPassword = 'MKT@2026#heavenminded';
-    if (input.toLowerCase() == adminEmail.toLowerCase() &&
-        enteredPassword == adminPassword) {
-      await prefs.setBool('is_admin', true);
-      await prefs.setBool('is_logged_in', true);
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      Navigator.pushNamedAndRemoveUntil(
-          context, '/admin-dashboard', (route) => false);
-      return;
-    }
-
     // ── Regular user credentials check ──────────────────────────────────────
     final savedPhone = prefs.getString('profile_phone') ?? '';
     final savedEmail = prefs.getString('profile_email') ?? '';
-    final savedPassword = prefs.getString('profile_password') ?? '';
+    final savedPasswordHash = prefs.getString('profile_password_hash') ?? '';
+    final savedPasswordSalt = prefs.getString('profile_password_salt') ?? '';
+    final legacyPassword = prefs.getString('profile_password') ?? '';
 
     final phoneOrEmailMatch =
         input == savedPhone || input.toLowerCase() == savedEmail.toLowerCase();
 
-    if (!phoneOrEmailMatch || enteredPassword != savedPassword) {
+    final passwordMatches = savedPasswordHash.isNotEmpty &&
+            savedPasswordSalt.isNotEmpty
+        ? PasswordHasher.verifyPassword(
+            password: enteredPassword,
+            salt: savedPasswordSalt,
+            expectedHash: savedPasswordHash,
+          )
+        : enteredPassword == legacyPassword;
+
+    if (!phoneOrEmailMatch || !passwordMatches) {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,8 +74,18 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    await prefs.setBool('is_logged_in', true);
-    await prefs.setBool('is_admin', false);
+    if (savedPasswordHash.isEmpty || savedPasswordSalt.isEmpty) {
+      final salt = PasswordHasher.generateSalt();
+      final hash = PasswordHasher.hashPassword(
+        password: enteredPassword,
+        salt: salt,
+      );
+      await prefs.setString('profile_password_hash', hash);
+      await prefs.setString('profile_password_salt', salt);
+      await prefs.remove('profile_password');
+    }
+
+    await context.read<AuthProvider>().signInUser();
 
     if (!mounted) return;
     setState(() => _isLoading = false);

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/home_shop_provider.dart';
 import '../widgets/cart_icon_badge.dart';
@@ -19,23 +19,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _isAdmin = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAdminStatus();
-  }
-
-  Future<void> _loadAdminStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() => _isAdmin = prefs.getBool('is_admin') ?? false);
-  }
-
   @override
   Widget build(BuildContext context) {
     context.watch<CartProvider>();
+    final isAdmin = context.watch<AuthProvider>().isAdminSessionActive;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -52,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         automaticallyImplyLeading: false,
-        leading: _isAdmin
+        leading: isAdmin
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
                 tooltip: 'Back to Intro',

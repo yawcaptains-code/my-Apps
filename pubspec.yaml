@@ -32,6 +32,9 @@ dependencies:
   # Shimmer skeleton loading effect
   shimmer: ^3.0.0
 
+  # Password hashing for local account storage
+  crypto: ^3.0.3
+
   # WhatsApp / phone call deep-links
   url_launcher: ^6.3.1
 

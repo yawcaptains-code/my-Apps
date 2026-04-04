@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 
 /// User profile / account screen.
@@ -23,6 +24,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const _emailKey   = 'profile_email';
   static const _addressKey = 'profile_address';
   static const _avatarKey  = 'profile_avatar';
+  static const _passwordHashKey = 'profile_password_hash';
+  static const _passwordSaltKey = 'profile_password_salt';
 
   String _name    = '';
   String _phone   = '';
@@ -45,7 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _email   = prefs.getString(_emailKey)   ?? '';
       _address = prefs.getString(_addressKey) ?? '';
       _avatar  = prefs.getString(_avatarKey)  ?? '';
-      _isAdmin = prefs.getBool('is_admin')    ?? false;
+      _isAdmin = context.read<AuthProvider>().isAdminSessionActive;
     });
   }
 
@@ -362,7 +365,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           await prefs.remove(_emailKey);
                           await prefs.remove(_addressKey);
                           await prefs.remove(_avatarKey);
-                          await prefs.setBool('is_admin', false);
+                          await prefs.remove(_passwordHashKey);
+                          await prefs.remove(_passwordSaltKey);
+                          await context.read<AuthProvider>().signOutUser();
+                          await context.read<AuthProvider>().signOutAdmin();
                           await _load();
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
