@@ -28,6 +28,11 @@ Set this environment variable in Netlify before deploying:
 
 - `ADMIN_ACCESS_CODE` - the admin access code used by the admin login screen
 
+Set these environment variables if you want Supabase enabled in production:
+
+- `SUPABASE_URL` - your Supabase project URL
+- `SUPABASE_ANON_KEY` - your Supabase anon public API key
+
 If this variable is missing, admin login will be disabled in that build.
 
 ## SPA route support

@@ -24,3 +24,29 @@ This repository includes Netlify deployment configuration for Flutter Web.
 - Netlify build config: [netlify.toml](netlify.toml)
 - Build script used by Netlify: [scripts/netlify-build.sh](scripts/netlify-build.sh)
 - Admin login requires the `ADMIN_ACCESS_CODE` build-time environment variable.
+
+## Supabase Backend
+
+This repository now includes a Supabase backend scaffold:
+
+- SQL migration: `supabase/migrations/202604060001_initial_schema.sql`
+- Seed data: `supabase/seed.sql`
+- Flutter bootstrap: `lib/backend/supabase_bootstrap.dart`
+- Flutter repositories: `lib/backend/repositories/`
+
+Apply backend schema with Supabase CLI:
+
+```bash
+supabase link --project-ref <your-project-ref>
+supabase db push
+supabase db reset --linked
+```
+
+Run Flutter with Supabase variables:
+
+```bash
+flutter run \
+	--dart-define=SUPABASE_URL=https://<project-ref>.supabase.co \
+	--dart-define=SUPABASE_ANON_KEY=<your-anon-key> \
+	--dart-define=ADMIN_ACCESS_CODE=<your-admin-code>
+```

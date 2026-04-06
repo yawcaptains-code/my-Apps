@@ -35,6 +35,9 @@ dependencies:
   # Password hashing for local account storage
   crypto: ^3.0.3
 
+  # Supabase client (auth, database, storage)
+  supabase_flutter: ^2.8.4
+
   # WhatsApp / phone call deep-links
   url_launcher: ^6.3.1
 

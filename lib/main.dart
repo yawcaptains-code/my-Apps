@@ -10,6 +10,7 @@ import 'providers/contact_info_provider.dart';
 import 'providers/home_shop_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
+import 'backend/supabase_bootstrap.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/main_shell.dart';
@@ -32,7 +33,10 @@ import 'screens/admin_page7_screen.dart';
 import 'screens/carousel_preview_screen.dart';
 import 'widgets/admin_route_gate.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SupabaseBootstrap.initializeIfConfigured();
+
   runApp(
     MultiProvider(
       providers: [
