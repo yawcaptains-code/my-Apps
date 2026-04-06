@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../backend/supabase_bootstrap.dart';
 import '../providers/auth_provider.dart';
 import '../services/password_hasher.dart';
 
@@ -42,6 +43,31 @@ class _LoginScreenState extends State<LoginScreen> {
     final enteredPassword = _passwordController.text;
     final prefs = await SharedPreferences.getInstance();
 
+    String? supabaseError;
+    if (SupabaseBootstrap.isInitialized && input.contains('@')) {
+      try {
+        await context.read<AuthProvider>().signInUser(
+              email: input,
+              password: enteredPassword,
+            );
+
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅  Logged in successfully! Welcome back.'),
+            backgroundColor: Color(0xFFC62828),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        return;
+      } catch (e) {
+        supabaseError = e.toString();
+      }
+    }
+
     // ── Regular user credentials check ──────────────────────────────────────
     final savedPhone = prefs.getString('profile_phone') ?? '';
     final savedEmail = prefs.getString('profile_email') ?? '';
@@ -65,8 +91,12 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Incorrect phone/email or password. Please try again.'),
+        SnackBar(
+          content: Text(
+            supabaseError == null
+                ? 'Incorrect phone/email or password. Please try again.'
+                : 'Login failed: $supabaseError',
+          ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),

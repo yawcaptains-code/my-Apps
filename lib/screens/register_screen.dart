@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../backend/supabase_bootstrap.dart';
+import '../providers/auth_provider.dart';
 import '../services/password_hasher.dart';
 
 /// Simple customer registration screen.
@@ -68,6 +71,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
+    bool signedInAfterSignup = false;
+    if (SupabaseBootstrap.isInitialized) {
+      if (email.isEmpty) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email is required for cloud account registration.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      try {
+        signedInAfterSignup = await context.read<AuthProvider>().signUpUser(
+              email: email,
+              password: password,
+              displayName: _nameController.text.trim(),
+              phone: _phoneController.text.trim(),
+            );
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Registration failed: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+    }
+
     await prefs.setString('profile_name', _nameController.text.trim());
     await prefs.setString('profile_phone', _phoneController.text.trim());
     if (email.isNotEmpty) {
@@ -86,11 +125,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (!mounted) return;
 
+    if (signedInAfterSignup) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '🎉  Account created, ${_nameController.text.trim()}! You are now signed in.',
+          ),
+          backgroundColor: const Color(0xFFC62828),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '🎉  Account created, ${_nameController.text.trim()}! '
-          'Please sign in to continue.',
+          SupabaseBootstrap.isInitialized
+              ? '🎉  Account created. Check your email to confirm, then sign in.'
+              : '🎉  Account created, ${_nameController.text.trim()}! Please sign in to continue.',
         ),
         backgroundColor: const Color(0xFFC62828),
         behavior: SnackBarBehavior.floating,
@@ -98,7 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
 
-    // Redirect to login so the user must sign in after registration.
+    // Redirect to login when signup is pending confirmation or local-only mode.
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
