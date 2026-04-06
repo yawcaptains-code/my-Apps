@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../backend/repositories/orders_remote_repository.dart';
+import '../backend/supabase_bootstrap.dart';
 import '../models/order.dart';
 import '../models/cart_item.dart';
 
@@ -8,6 +11,7 @@ class OrdersProvider extends ChangeNotifier {
   static const _key = 'placed_orders';
 
   List<OrderModel> _orders = [];
+  final OrdersRemoteRepository _remote = OrdersRemoteRepository();
 
   List<OrderModel> get orders => List.unmodifiable(_orders);
 
@@ -16,6 +20,18 @@ class OrdersProvider extends ChangeNotifier {
   // ── Initialisation ────────────────────────────────────────────────────────
 
   Future<void> loadFromPrefs() async {
+    if (SupabaseBootstrap.isInitialized) {
+      try {
+        _orders = await _remote.fetchMyOrders();
+        notifyListeners();
+        // Keep local cache warm for offline fallback.
+        await _persist();
+        return;
+      } catch (e) {
+        debugPrint('Orders remote load failed, using local cache: $e');
+      }
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_key) ?? [];
     _orders = raw
@@ -49,6 +65,15 @@ class OrdersProvider extends ChangeNotifier {
     );
     _orders.insert(0, order);
     await _persist();
+
+    if (SupabaseBootstrap.isInitialized) {
+      try {
+        await _remote.placeOrder(order);
+      } catch (e) {
+        debugPrint('Orders remote place failed: $e');
+      }
+    }
+
     notifyListeners();
   }
 
@@ -59,6 +84,15 @@ class OrdersProvider extends ChangeNotifier {
     if (index == -1) return;
     _orders[index].status = newStatus;
     await _persist();
+
+    if (SupabaseBootstrap.isInitialized) {
+      try {
+        await _remote.updateStatus(orderId: orderId, status: newStatus);
+      } catch (e) {
+        debugPrint('Orders remote status update failed: $e');
+      }
+    }
+
     notifyListeners();
   }
 
