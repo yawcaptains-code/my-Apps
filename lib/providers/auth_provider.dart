@@ -146,4 +146,12 @@ class AuthProvider extends ChangeNotifier {
     _isAdminSessionActive = false;
     notifyListeners();
   }
+
+  Future<bool> sendPasswordResetEmail(String email) async {
+    if (!SupabaseBootstrap.isInitialized) return false;
+    if (email.trim().isEmpty || !email.contains('@')) return false;
+
+    await Supabase.instance.client.auth.resetPasswordForEmail(email.trim());
+    return true;
+  }
 }
